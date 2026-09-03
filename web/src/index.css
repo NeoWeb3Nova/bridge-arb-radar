@@ -1,0 +1,206 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Impeccable Signature Palette: Kinpaku Gold (金箔) & Deep Lacquer (漆黑) */
+    --ks-kinpaku: #f5c042;
+    --ks-kinpaku-vivid: #ffd24d;
+    --ks-kinpaku-pale: #e6cb85;
+    --ks-kinpaku-rich: #d4a028;
+    --ks-kinpaku-deep: #997015;
+    --ks-dark-ink: #070604;
+    --ks-patina: #45c4b0;
+    --ks-patina-pale: #7fe0d0;
+    --ks-patina-deep: #137768;
+    --ks-vermilion: #e65138;
+    --ks-lacquer: #0d0c0a;
+    --ks-lacquer-deep: #070604;
+    --ks-lacquer-raised: #161410;
+    --ks-graphite: #211e19;
+    --ks-graphite-2: #2b2721;
+    --ks-champagne: #f7f4ef;
+    --ks-text: #ece8e1;
+    --ks-text-muted: #a39e93;
+    --ks-text-faint: #6e695e;
+    --ks-rule: rgba(236, 232, 225, 0.12);
+    --ks-edge: rgba(236, 232, 225, 0.28);
+
+    --bg-base: var(--ks-lacquer-deep);
+    --bg-surface: var(--ks-lacquer-raised);
+    --bg-elevated: var(--ks-graphite);
+    --border-subtle: var(--ks-rule);
+    --border-card: var(--ks-rule);
+    --text-primary: var(--ks-text);
+    --text-secondary: var(--ks-text-muted);
+    --text-muted: var(--ks-text-faint);
+  }
+
+  html.light {
+    color-scheme: light;
+    /* Impeccable Washi Paper & Dark Charcoal */
+    --ks-dark-ink: #070604;
+    --ks-lacquer: #f7f4ef;
+    --ks-lacquer-deep: #f0ebe1;
+    --ks-lacquer-raised: #ffffff;
+    --ks-graphite: #e6e0d3;
+    --ks-graphite-2: #ded6c5;
+    --ks-champagne: #1f1d19;
+    --ks-text: #1f1d19;
+    --ks-text-muted: #5c564b;
+    --ks-text-faint: #8a8273;
+    --ks-rule: rgba(31, 29, 25, 0.1);
+    --ks-edge: rgba(31, 29, 25, 0.25);
+    --ks-kinpaku: #b8860b;
+    --ks-patina: #0d7a6b;
+
+    --bg-base: var(--ks-lacquer-deep);
+    --bg-surface: var(--ks-lacquer-raised);
+    --bg-elevated: var(--ks-graphite);
+    --border-subtle: var(--ks-rule);
+    --border-card: var(--ks-rule);
+    --text-primary: var(--ks-text);
+    --text-secondary: var(--ks-text-muted);
+    --text-muted: var(--ks-text-faint);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: "Albert Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Impeccable Wordmark & Condensed Display Header Font */
+  .font-display {
+    font-family: "Alumni Sans", "Albert Sans", sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  /* Kinpaku Gold Selection */
+  ::selection {
+    background: rgba(245, 192, 66, 0.35);
+    color: #ffffff;
+  }
+  html.light ::selection {
+    background: rgba(184, 134, 11, 0.25);
+    color: #1f1d19;
+  }
+
+  /* Impeccable Refined Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--ks-graphite-2);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ks-kinpaku-deep);
+  }
+}
+
+/* High-precision Tabular Figures */
+.font-mono-num {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+
+/* Impeccable Signature Plinth Panel */
+.terminal-panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+html.light .terminal-panel {
+  box-shadow: 0 2px 10px -1px rgba(31, 29, 25, 0.06);
+}
+
+.terminal-panel:hover {
+  border-color: var(--ks-kinpaku);
+}
+
+/* Impeccable Subtle Glow Buttons */
+.impeccable-btn-primary {
+  background: linear-gradient(180deg, var(--ks-kinpaku-vivid) 0%, var(--ks-kinpaku) 100%);
+  color: #070604;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(245, 192, 66, 0.25);
+  transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.impeccable-btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 14px rgba(245, 192, 66, 0.4);
+  transform: translateY(-1px);
+}
+
+.impeccable-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Color overrides for smooth adaptation */
+html.light .text-slate-100 {
+  color: #1f1d19 !important;
+}
+html.light .text-slate-200 {
+  color: #2b2721 !important;
+}
+html.light .text-slate-300 {
+  color: #454035 !important;
+}
+html.light .text-slate-400 {
+  color: #6e695e !important;
+}
+html.light .text-slate-500 {
+  color: #8a8273 !important;
+}
+
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/40,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+html.light .bg-slate-950\/60,
+html.light .bg-slate-950\/70,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950 {
+  background-color: #f7f4ef !important;
+}
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/40,
+html.light .divide-slate-800\/60,
+html.light .divide-slate-800\/50 {
+  border-color: rgba(31, 29, 25, 0.1) !important;
+}
+html.light .bg-\[\#090d14\] {
+  background-color: #f0ebe1 !important;
+}
+html.light .bg-\[\#0c121e\]\/90 {
+  background-color: rgba(247, 244, 239, 0.92) !important;
+}
+html.light .bg-slate-800,
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/70 {
+  background-color: #e6e0d3 !important;
+  color: #1f1d19 !important;
+}
+html.light .hover\:bg-slate-800\/40:hover,
+html.light .hover\:bg-slate-800\/30:hover,
+html.light .hover\:bg-slate-800\/60:hover {
+  background-color: #ebe5d8 !important;
+}

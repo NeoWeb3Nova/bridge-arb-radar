@@ -9,4 +9,6 @@ token-registry.json
 
 # Node
 node_modules/
+web/node_modules/
+web/dist/
 *.pid
