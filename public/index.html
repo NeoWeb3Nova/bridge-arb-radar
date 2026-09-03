@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bridge Arb Radar · 跨链桥套利雷达</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">BR</div>
+    <div>
+      <h1>Bridge Arb Radar</h1>
+      <p class="sub">跨链桥流水 → 钱包沉淀 → 代币库 → 价差核查</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span id="scanStatus" class="pill pill-idle">未扫描</span>
+    <button id="btnScan" class="btn btn-primary">立即扫描</button>
+    <button id="btnSettings" class="btn">数据源</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-view="dash">总览</button>
+  <button class="tab" data-view="feed">桥流</button>
+  <button class="tab" data-view="wallets">钱包库</button>
+  <button class="tab" data-view="tokens">代币库</button>
+  <button class="tab" data-view="spread">价差检查</button>
+  <button class="tab" data-view="decide">决策</button>
+  <button class="tab" data-view="pipeline">管道</button>
+  <button class="tab" data-view="sources">数据源</button>
+</nav>
+
+<main>
+  <!-- 总览 -->
+  <section id="view-dash" class="view active">
+    <div class="cards" id="statCards"></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h2>当前价差机会</h2><span class="btn-group"><span class="muted" id="oppCount"></span><button id="btnOppRefresh" class="btn btn-sm" title="为存量机会补全合约地址/裁决标签（需联网比价，可能耗时十几秒）">补全核验</button></span></div>
+        <div id="dashOpps" class="list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>高分钱包 Top 8</h2><span class="muted">点击跳转钱包库</span></div>
+        <div id="dashWallets" class="list"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>工作流</h2></div>
+      <ol class="flow">
+        <li><b>扫描桥流</b>：聚合 Wormhole / LayerZero / Axelar / Hyperlane / Range，看到别人在跨什么币。</li>
+        <li><b>筛陌生币</b>：桥流里打开「只看陌生代币」，主流币之外的才是机会。</li>
+        <li><b>存钱包</b>：桥两端地址自动进钱包库，带资金闭环识别与评分。</li>
+        <li><b>追交易</b>：钱包详情里用 Blockscan 拉多链流水，或一键开 DeBank 主页。</li>
+        <li><b>记代币</b>：代币库沉淀常套利的币，星标后每次扫描优先比价。</li>
+        <li><b>查价差</b>：价差检查器对同一币做多链报价对比，看到价差再决定要不要跳。</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>扫描日志</h2></div>
+      <div id="dashLog" class="log"></div>
+    </div>
+  </section>
+
+  <!-- 桥流 -->
+  <section id="view-feed" class="view">
+    <div class="panel">
+      <div class="filters">
+        <select id="fSource"><option value="">全部数据源</option></select>
+        <select id="fChain"><option value="">全部链</option></select>
+        <input id="fQuery" type="search" placeholder="搜索 tx / 代币 / 地址" />
+        <label class="chk"><input type="checkbox" id="fUnknown" /> 只看陌生代币</label>
+        <input id="fMinUsd" type="number" placeholder="最小 USD" class="w120" />
+        <select id="fHours"><option value="">全部时间</option><option value="6">6 小时</option><option value="24" selected>24 小时</option><option value="72">3 天</option></select>
+        <button id="fApply" class="btn">筛选</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="feedTable">
+          <thead><tr>
+            <th>时间</th><th>源</th><th>路线</th><th>代币</th><th class="right">数量</th><th class="right">USD</th><th>发送方</th><th>去向</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager"><span id="feedCount" class="muted"></span></div>
+    </div>
+  </section>
+
+  <!-- 钱包库 -->
+  <section id="view-wallets" class="view">
+    <div class="panel">
+      <div class="filters">
+        <input id="wQuery" type="search" placeholder="搜索地址 / 备注 / 标签" />
+        <select id="wGrade"><option value="">全部等级</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <select id="wSort">
+          <option value="score">按分数</option><option value="recent">按最近活跃</option>
+          <option value="cycles">按资金闭环</option><option value="bridges">按桥次数</option>
+          <option value="roundtrips">按往返次数</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="wHideContracts" checked /> 隐藏疑似桥合约</label>
+        <button id="wApply" class="btn">筛选</button>
+        <span class="spacer"></span>
+        <button id="wAdd" class="btn btn-primary">+ 手动添加地址</button>
+        <button id="wExport" class="btn">导出 CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="walletTable">
+          <thead><tr>
+            <th>等级</th><th>地址</th><th class="right">分数</th><th class="right">桥次数</th>
+            <th class="right" title="同一币种在两条链之间双向搬运，多为做市商调仓或搬过去后撤单">往返</th>
+            <th class="right" title="代币 A→B 出去、稳定币 B→A 回来，即卖掉后资金回流，真实套利闭环">闭环</th>
+            <th class="right">冷门币</th><th>链</th><th>标签</th><th>最近</th><th>操作</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 代币库 -->
+  <section id="view-tokens" class="view">
+    <div class="panel">
+      <div class="filters">
+        <input id="tQuery" type="search" placeholder="搜索 symbol / 合约地址" />
+        <label class="chk"><input type="checkbox" id="tUnknown" /> 只看陌生代币</label>
+        <label class="chk"><input type="checkbox" id="tStarred" /> 只看星标</label>
+        <select id="tSort"><option value="score">综合排序</option><option value="spread">按价差</option><option value="recent">按最近出现</option></select>
+        <button id="tApply" class="btn">筛选</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tokenTable">
+          <thead><tr>
+            <th>★</th><th>代币</th><th>链</th><th class="right">桥次数</th><th class="right">钱包数</th>
+            <th class="right">最优价差</th><th>主要路线</th><th>最近</th><th>操作</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 价差检查 -->
+  <section id="view-spread" class="view">
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h2>按 symbol 查多链价差</h2></div>
+        <p class="muted small">只信官方合约地址（TrustWallet / CoinGecko 注册表交叉验证）；symbol 搜索撞出的地址一律标「假币嫌疑」。</p>
+        <div class="form-row">
+          <input id="spSymbol" placeholder="例如 ENA / MOG / USDC" />
+          <button id="spSymbolGo" class="btn btn-primary">查询价差</button>
+          <button id="spResolveGo" class="btn">查官方合约</button>
+        </div>
+        <div id="spSymbolResult"></div>
+        <div class="panel-head" style="margin-top:14px"><h2>各链官方合约地址</h2></div>
+        <div id="spResolveResult" class="list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>按合约地址精确比价</h2></div>
+        <p class="muted small">每行一条：链 + 合约地址，至少两行。用于同一币在不同链的真实合约。</p>
+        <div id="spRows"></div>
+        <div class="form-row">
+          <button id="spAddRow" class="btn">+ 增加一行</button>
+          <button id="spAddrGo" class="btn btn-primary">比价</button>
+        </div>
+        <div id="spAddrResult"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 决策 / 素材 -->
+  <section id="view-decide" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>机会决策看板</h2>
+        <span class="muted small" id="decMeta"></span>
+        <span class="spacer"></span>
+        <span class="btn-group">
+          <select id="decStatus">
+            <option value="all">全部状态</option>
+            <option value="unmarked">未标记</option>
+            <option value="watching">已跟进</option>
+            <option value="executed">已执行</option>
+            <option value="closed">已结算</option>
+            <option value="dropped">已放弃</option>
+          </select>
+          <button id="decRefresh" class="btn">刷新</button>
+        </span>
+      </div>
+      <div class="cards" id="decCards"></div>
+      <p class="muted small" style="margin-top:6px">对雷达报出的每条价差机会做人工裁决记录：跟进 / 放弃 / 执行 / 结算，并沉淀实际盈亏。点行内「日志」追加行动与盈亏，状态徽标色与总览一致。</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>机会 × 决策</h2><span class="muted small" id="decListMeta"></span></div>
+      <div class="table-wrap" style="max-height:62vh">
+        <table class="table" id="decTable">
+          <thead><tr>
+            <th>状态</th><th>代币</th><th class="right">价差%</th><th>买入腿</th><th>卖出腿</th>
+            <th class="right">已实现盈亏</th><th>行动日志 / 备注</th><th>发现于</th><th>操作</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 管道 -->
+  <section id="view-pipeline" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>实时看板</h2>
+        <span class="btn-group">
+          <label class="chk"><input type="checkbox" id="pAutoRefresh" checked /> 自动刷新</label>
+          <select id="pRefreshSec">
+            <option value="5">5 秒</option>
+            <option value="10" selected>10 秒</option>
+            <option value="30">30 秒</option>
+            <option value="60">60 秒</option>
+          </select>
+          <button id="pRefreshNow" class="btn">立即刷新</button>
+        </span>
+      </div>
+      <div class="cards" id="pipeCards"></div>
+      <div class="pipe-bar">
+        <span id="pipeStatus" class="pill">—</span>
+        <span id="pipeNext" class="muted small"></span>
+        <span class="spacer"></span>
+        <span id="pipeFresh" class="muted small"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>阶段转化漏斗</h2>
+        <span class="muted small" id="funnelMeta"></span>
+      </div>
+      <div id="funnel" class="funnel"></div>
+      <p class="muted small">口径：比价段采用链式统计——下一道闸门的输入就是上一道的输出，因此漏斗必然单调递减，卡在哪一环一眼可见。数据源段与比价段是两条独立支流，中间没有直接换算关系。</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>数据源本次吞吐</h2>
+        <span class="muted small">失败的源不参与后续统计</span>
+      </div>
+      <div id="pipeSources" class="list"></div>
+    </div>
+  </section>
+
+  <!-- 数据源 -->
+  <section id="view-sources" class="view">
+    <div class="panel">
+      <div class="panel-head"><h2>数据源健康</h2><button id="btnHealth" class="btn">重新检测</button></div>
+      <div id="sourceHealth" class="source-grid"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>官方合约注册表（防假币锚点）</h2><span class="btn-group"><button id="btnExportRegistryCsv" class="btn">导出对照表 CSV</button><button id="btnExportRegistryJson" class="btn">JSON</button><button id="btnBuildRegistry" class="btn btn-primary">重建注册表</button></span></div>
+      <div id="registryStatus" class="muted small">加载中…</div>
+      <p class="muted small">跨链比价只信官方合约：Trust Wallet 12 链注册表 + CoinGecko platforms + 桥数据交叉验证。symbol 搜索撞出的地址若不在官方注册表，一律标「假币嫌疑」，不参与价差机会。同名多合约（ambiguous）代币会走自动裁决：按链价格联动 + 官方 explorer 二次确认。</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>数据安全（SQLite 存储）</h2><span class="btn-group"><button id="btnCompact" class="btn">压缩</button><button id="btnBackup" class="btn btn-primary">立即备份</button></span></div>
+      <div id="storageStatus" class="muted small">加载中…</div>
+      <p class="muted small">数据已从单一 JSON 文件升级为 SQLite 单文件库：WAL 日志 + 事务原子写，进程崩溃不写坏文件；每 6 小时自动滚动备份（保留最近 20 份），启动时做完整性校验、损坏自动从最近备份恢复。写入采用增量持久化——每次只落盘变化行，写放大从 23x 降到 1x。</p>
+      <div class="panel-head" style="margin-top:12px"><h3>一键导出（离线归档）</h3></div>
+      <div class="export-grid">
+        <div class="export-row"><span class="export-label">钱包</span>
+          <button class="btn exp-btn" data-exp-type="wallets" data-exp-format="csv">CSV</button>
+          <button class="btn exp-btn" data-exp-type="wallets" data-exp-format="json">JSON</button>
+        </div>
+        <div class="export-row"><span class="export-label">代币</span>
+          <button class="btn exp-btn" data-exp-type="tokens" data-exp-format="csv">CSV</button>
+          <button class="btn exp-btn" data-exp-type="tokens" data-exp-format="json">JSON</button>
+        </div>
+        <div class="export-row"><span class="export-label">流水</span>
+          <button class="btn exp-btn" data-exp-type="transfers" data-exp-format="csv">CSV</button>
+          <button class="btn exp-btn" data-exp-type="transfers" data-exp-format="json">JSON</button>
+        </div>
+        <div class="export-row"><span class="export-label">机会</span>
+          <button class="btn exp-btn" data-exp-type="opportunities" data-exp-format="csv">CSV</button>
+          <button class="btn exp-btn" data-exp-type="opportunities" data-exp-format="json">JSON</button>
+        </div>
+      </div>
+      <p class="muted small">CSV 带 UTF-8 BOM，Excel 直接打开不乱码；JSON 为完整对象，适合程序化处理或再次导入。</p>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h2>数据源密钥与代理</h2></div>
+        <div class="key-groups">
+          <section class="key-group">
+            <div class="key-group-head"><span class="kicon kicon-proxy">网</span><div><h3>网络代理</h3><p>境外接口（DexScreener / CoinGecko / TrustWallet 等）需走代理才能访问</p></div></div>
+            <div class="form">
+              <label class="chk"><input type="checkbox" id="sUseProxy" /> 启用代理</label>
+              <label>代理地址<input id="sProxy" placeholder="http://127.0.0.1:10808" /></label>
+            </div>
+          </section>
+          <section class="key-group">
+            <div class="key-group-head"><span class="kicon kicon-bridge">桥</span><div><h3>桥数据源密钥（按协议）</h3><p>每个协议单独配置、互不干扰。留空的协议会自动回落到各自的官方公开接口；完全不填也能跑（Wormhole 免 Key）</p></div></div>
+            <div class="proto-grid">
+              <div class="proto-card proto-free">
+                <div class="proto-head"><span class="proto-tag">Wormhole</span><span class="proto-badge free">免 Key</span></div>
+                <p class="proto-desc">官方公开 API，无需任何配置，开箱即用。</p>
+              </div>
+
+              <div class="proto-card proto-free">
+                <div class="proto-head"><span class="proto-tag">LayerZero</span><span class="proto-badge free">免 Key</span></div>
+                <p class="proto-desc">官方公开 API（scan.layerzero-api.com），无需任何配置，开箱即用。</p>
+              </div>
+
+              <div class="proto-card proto-free">
+                <div class="proto-head"><span class="proto-tag">Axelar</span><span class="proto-badge free">免 Key</span></div>
+                <p class="proto-desc">官方公开 API（api.axelarscan.io）免 Key；批量端点 searchGMP（实时）与 searchTransfers（Token Transfer）已可用，无需任何密钥。</p>
+              </div>
+
+              <div class="proto-card proto-free">
+                <div class="proto-head"><span class="proto-tag">Hyperlane</span><span class="proto-badge free">免 Key</span></div>
+                <p class="proto-desc">官方公开 GraphQL（api.hyperlane.xyz/v1/graphql）免 Key，开箱即用。</p>
+              </div>
+
+              <div class="proto-card">
+                <div class="proto-head"><span class="proto-tag">Range</span><span class="proto-badge req">需 Key</span></div>
+                <p class="proto-desc">覆盖 5 大桥的综合浏览器，需官方 Key（免费注册 app.range.org → Settings → API 生成）。</p>
+                <label>API Key<input id="sKeyRange" placeholder="app.range.org/keys 申请" /></label>
+                <label>自建 endpoint<input id="sEpRange" placeholder="留空用 https://api.range.org" /></label>
+              </div>
+            </div>
+          </section>
+          <section class="key-group">
+            <div class="key-group-head"><span class="kicon kicon-chain">链</span><div><h3>链上数据 / 钱包追踪</h3><p>用于钱包多链流水追踪、代币链上信息核对</p></div></div>
+            <div class="form">
+              <label>Etherscan / Blockscan Key<input id="sKeyEtherscan" placeholder="Etherscan V2 多链，用于钱包流水追踪" /></label>
+              <label>DeBank AccessKey<input id="sKeyDebank" placeholder="可选，预留" /></label>
+            </div>
+          </section>
+        </div>
+        <div class="form-row">
+          <button id="saveKeys" class="btn btn-primary">保存密钥与代理</button>
+          <span id="keysMsg" class="muted"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>扫描设置</h2></div>
+        <div class="form">
+          <label class="chk"><input type="checkbox" id="sAuto" /> 启用自动扫描</label>
+          <label>扫描间隔（分钟）<input id="sInterval" type="number" min="1" /></label>
+          <label>回溯时间（小时）<input id="sLookback" type="number" min="1" /></label>
+          <label>价差告警阈值（%）<input id="sSpread" type="number" step="0.1" /></label>
+          <label>同名匹配可疑阈值（%）<input id="sHeurSpread" type="number" step="1" /></label>
+          <label>最小流动性（USD）<input id="sLiq" type="number" /></label>
+          <label class="chk"><input type="checkbox" id="sAutoPrice" /> 扫描后自动比价</label>
+          <button id="saveScan" class="btn btn-primary">保存扫描设置</button>
+          <span id="scanMsg"></span>
+        </div>
+        <div class="panel-head" style="margin-top:18px"><h2>手动导入桥交易</h2></div>
+        <p class="muted small">支持 JSON 数组，或 CSV（表头：txHash,fromChain,toChain,tokenSymbol,tokenAddress,sender,receiver,amount,timestamp）。链名用 ethereum / arbitrum / base / solana 等。</p>
+        <textarea id="importText" rows="6" placeholder='[{"txHash":"0x...","fromChain":"arbitrum","toChain":"base","tokenSymbol":"XYZ","tokenAddress":"0x...","sender":"0x...","receiver":"0x..."}]'></textarea>
+        <div class="form-row">
+          <select id="importSource">
+            <option value="manual">手动</option><option value="layerzero">LayerZero</option>
+            <option value="axelar">Axelar</option><option value="hyperlane">Hyperlane</option><option value="range">Range</option>
+          </select>
+          <button id="importGo" class="btn btn-primary">导入</button>
+          <span id="importMsg" class="muted"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 钱包详情抽屉 -->
+<div id="drawer" class="drawer">
+  <div class="drawer-mask" data-close></div>
+  <div class="drawer-body">
+    <div class="drawer-head">
+      <h2 id="dwTitle">钱包详情</h2>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div id="dwContent"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>

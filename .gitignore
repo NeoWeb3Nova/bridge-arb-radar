@@ -1,0 +1,12 @@
+# 运行期数据（本地 SQLite 与备份），不入库
+data/
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.legacy-*
+token-registry.json
+
+# Node
+node_modules/
+*.pid
