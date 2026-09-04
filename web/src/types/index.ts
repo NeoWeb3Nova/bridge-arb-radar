@@ -69,6 +69,9 @@ export interface OpportunityItem {
   ts?: string;
   tokenKey?: string;
   decision?: DecisionItem | null;
+  qualityScore?: number;
+  qualityGrade?: 'S' | 'A' | 'B' | 'C' | 'D';
+  scoreComment?: string;
 }
 
 export interface DecisionItem {
@@ -81,10 +84,19 @@ export interface DecisionItem {
   updatedAt?: string;
 }
 
+export interface WalletScoreBreakdown {
+  cycle: number;
+  activity: number;
+  exotic: number;
+  scale: number;
+  recency: number;
+}
+
 export interface WalletItem {
   address: string;
-  grade: 'A' | 'B' | 'C' | 'D';
+  grade: 'S' | 'A' | 'B' | 'C' | 'D';
   score: number;
+  scoreBreakdown?: WalletScoreBreakdown;
   bridgeCount: number;
   capitalCycles: number;
   roundtrips: number;

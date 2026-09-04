@@ -56,6 +56,18 @@ export interface ArbNetCalculation {
   route: BridgeRouteInfo;
   isLiveQuote?: boolean;
   liveQuoteData?: LiveQuoteData;
+  score: number; // 0~100 可行性综合评分
+  scoreGrade: 'S' | 'A' | 'B' | 'C' | 'D';
+  scoreBreakdown: ArbScoreBreakdown;
+  scoreComment: string;
+}
+
+export interface ArbScoreBreakdown {
+  profitScore: number;    // 0~40 净收益空间
+  liquidityScore: number; // 0~30 真实流动性与现金储备
+  bridgeScore: number;    // 0~20 跨链通道速度与稳定性
+  volumeScore: number;    // 0~10 市场活跃度
+  penalty: number;        // 扣分惩罚
 }
 
 const L2_CHAINS = new Set([
@@ -232,6 +244,72 @@ export function calculateNetArb(
   const netProfitUsd = grossProfitUsd - estTotalCostUsd;
   const netRoiPct = (netProfitUsd / capitalUsd) * 100;
 
+  // 5. Arbitrage Viability 100-point Composite Score (0~100)
+  // 维度1: 净收益空间 (0~40分)
+  let profitScore = 0;
+  if (netRoiPct >= 5) profitScore += 30;
+  else if (netRoiPct >= 3) profitScore += 25;
+  else if (netRoiPct >= 1.5) profitScore += 18;
+  else if (netRoiPct >= 0.5) profitScore += 10;
+  else if (netRoiPct > 0) profitScore += 5;
+
+  if (netProfitUsd >= 50) profitScore += 10;
+  else if (netProfitUsd >= 20) profitScore += 7;
+  else if (netProfitUsd >= 5) profitScore += 4;
+  else if (netProfitUsd > 0) profitScore += 2;
+
+  // 维度2: 真实流动性与现金储备 (0~30分)
+  let liquidityScore = 0;
+  if (effectiveLiq >= 100000) liquidityScore += 15;
+  else if (effectiveLiq >= 30000) liquidityScore += 12;
+  else if (effectiveLiq >= 10000) liquidityScore += 9;
+  else if (effectiveLiq >= 3000) liquidityScore += 5;
+  else liquidityScore += 2;
+
+  if (effectiveSellCash >= 30000) liquidityScore += 15;
+  else if (effectiveSellCash >= 10000) liquidityScore += 12;
+  else if (effectiveSellCash >= 3000) liquidityScore += 8;
+  else if (effectiveSellCash >= 1000) liquidityScore += 4;
+
+  // 维度3: 跨链通道速度与稳定性 (0~20分)
+  let bridgeScore = 0;
+  bridgeScore += (liveQuote && liveQuote.isLiveQuote) ? 12 : 6;
+  const etaSec = liveQuote?.etaSeconds || (route.etaMinutes * 60);
+  if (etaSec <= 60) bridgeScore += 8;
+  else if (etaSec <= 180) bridgeScore += 5;
+  else bridgeScore += 2;
+
+  // 维度4: 市场活跃度底分 (10分)
+  const volumeScore = 10;
+
+  // 扣分惩罚项：卖出池现金枯竭、极端滑点冲击、净亏损
+  let penalty = 0;
+  if (isDrained || effectiveSellCash < 500) penalty += 50; // 现金枯竭
+  else if (liquidityHealth === 'dangerous') penalty += 25;
+  else if (liquidityHealth === 'moderate') penalty += 10;
+
+  if (netProfitUsd <= 0) penalty += 30; // 净亏损惩罚
+
+  const rawScore = profitScore + liquidityScore + bridgeScore + volumeScore - penalty;
+  const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+  const scoreGrade: 'S' | 'A' | 'B' | 'C' | 'D' = score >= 85 ? 'S' : (score >= 70 ? 'A' : (score >= 50 ? 'B' : (score >= 25 ? 'C' : 'D')));
+
+  let scoreComment = '普通机会';
+  if (score >= 85) scoreComment = '极佳机会 · 净利与池深兼备';
+  else if (score >= 70) scoreComment = '优质机会 · 深度良好';
+  else if (score >= 50) scoreComment = '可行 · 容量有限需控单';
+  else if (isDrained || effectiveSellCash < 500) scoreComment = '高危 · 卖出池现金枯竭';
+  else if (netProfitUsd <= 0) scoreComment = '亏损 · 摩擦成本大于利差';
+  else scoreComment = '高风险 · 冲击过大深度过浅';
+
+  const scoreBreakdown: ArbScoreBreakdown = {
+    profitScore,
+    liquidityScore,
+    bridgeScore,
+    volumeScore,
+    penalty,
+  };
+
   return {
     capitalUsd,
     tokensBought,
@@ -255,5 +333,9 @@ export function calculateNetArb(
     route,
     isLiveQuote: !!liveQuote?.isLiveQuote,
     liveQuoteData: liveQuote || undefined,
+    score,
+    scoreGrade,
+    scoreBreakdown,
+    scoreComment,
   };
 }

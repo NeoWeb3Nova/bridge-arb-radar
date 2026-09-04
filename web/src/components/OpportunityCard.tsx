@@ -46,6 +46,18 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
                 {opp.symbol}
               </span>
               <VerdictBadge verdict={opp.verdict} size="xs" />
+              {typeof opp.qualityScore === 'number' && (
+                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
+                  opp.qualityScore >= 85 ? 'bg-amber-400/20 text-amber-400 border-amber-400/40 shadow-sm' :
+                  opp.qualityScore >= 70 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                  opp.qualityScore >= 50 ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' :
+                  opp.qualityScore >= 25 ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' :
+                  'bg-rose-500/15 text-rose-400 border-rose-500/25'
+                }`} title={opp.scoreComment || `套利可行性综合评分: ${opp.qualityScore}/100`}>
+                  <span>{opp.qualityGrade || 'B'}</span>
+                  <span>{opp.qualityScore}分</span>
+                </span>
+              )}
               {opp.decision?.status && (
                 <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[#45c4b0]/15 text-[#45c4b0] border border-[#45c4b0]/25">
                   {opp.decision.status}

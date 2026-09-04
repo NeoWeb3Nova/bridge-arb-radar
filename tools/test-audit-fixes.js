@@ -129,6 +129,57 @@ async function runTests() {
     store.removeDecision(store.decisionKey('HISTORICAL_COIN', 'ethereum', 'polygon'));
   }
 
+  console.log('\n=== 7. 百分制打分模型测试 (钱包打分 & 机会打分) ===');
+  {
+    const scorer = require('../lib/wallet-scorer');
+    const ArbDetector = require('../lib/arb-detector');
+
+    // 1. 钱包打分百分制与评级校验
+    const w = {
+      address: '0xtest',
+      bridgeCount: 35,
+      chains: { eth: 1, arb: 1, base: 1 },
+      tokens: { A: 1, B: 1, C: 1 },
+      maxUsd: 15000,
+      lastSeen: new Date().toISOString(),
+      flows: [
+        { from: 'base', to: 'eth', sym: 'PEPE', ts: new Date(Date.now() - 3600000).toISOString(), usd: 5000 },
+        { from: 'eth', to: 'base', sym: 'USDC', ts: new Date().toISOString(), usd: 5400 }
+      ]
+    };
+    scorer.scoreSingleWallet(w, 50);
+    ok('钱包评分处于 0~100 范围内', w.score >= 0 && w.score <= 100);
+    ok('钱包评级为 S/A/B/C/D 之一', ['S', 'A', 'B', 'C', 'D'].includes(w.grade));
+    ok('钱包评分包含 5 维度细分 breakdown', !!w.scoreBreakdown && typeof w.scoreBreakdown.cycle === 'number');
+
+    // 2. 套利机会综合评分校验
+    const goodOpp = {
+      spreadPct: 8.5,
+      minLiquidityUsd: 65000,
+      sellQuoteReserveUsd: 32000,
+      buyChain: 'base',
+      sellChain: 'arbitrum',
+      minVolume24h: 25000,
+      verdict: 'confirmed',
+      poolSkewed: false,
+    };
+    const goodScore = ArbDetector.calculateOpportunityScore(goodOpp);
+    ok('优质机会评分 >= 70 (A 或 S 级)', goodScore.qualityScore >= 70 && (goodScore.qualityGrade === 'A' || goodScore.qualityGrade === 'S'));
+
+    // 3. 卖出池现金枯竭机会应受严惩
+    const drainedOpp = {
+      spreadPct: 55.0,
+      minLiquidityUsd: 100000,
+      sellQuoteReserveUsd: 88, // 仅 $88 现金
+      poolSkewed: true,
+      buyChain: 'bsc',
+      sellChain: 'ethereum',
+      verdict: 'suspicious',
+    };
+    const drainedScore = ArbDetector.calculateOpportunityScore(drainedOpp);
+    ok('枯竭池机会综合评分受到严惩归入 D 级 (<= 25分)', drainedScore.qualityScore <= 25 && drainedScore.qualityGrade === 'D');
+  }
+
   console.log(`\n============================`);
   console.log(`总计测试: ${passed + failed} | 通过: ${passed} | 失败: ${failed}`);
   if (failed > 0) process.exit(1);

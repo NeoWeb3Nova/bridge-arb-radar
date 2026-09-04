@@ -52,18 +52,66 @@ export const WalletDrawer: React.FC<Props> = ({ wallet, onClose }) => {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-[var(--bg-elevated)]/50 p-3 rounded-lg border border-[var(--border-subtle)]">
-            <div className="text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
-              <Award size={13} /> {tr('dwScoreTitle')}
+            <div className="text-xs text-[var(--text-secondary)] mb-1 flex items-center justify-between">
+              <span className="flex items-center gap-1"><Award size={13} /> {tr('dwScoreTitle')}</span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                wallet.grade === 'S' ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40' :
+                wallet.grade === 'A' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                wallet.grade === 'B' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                'bg-slate-700/20 text-[var(--text-muted)] border border-[var(--border-subtle)]'
+              }`}>
+                {wallet.grade} 级
+              </span>
             </div>
-            <div className="font-mono-num text-xl font-bold text-[var(--text-primary)]">{wallet.score}</div>
+            <div className="flex items-baseline gap-1">
+              <span className={`font-mono-num text-2xl font-bold ${
+                wallet.score >= 90 ? 'text-amber-400' :
+                wallet.score >= 75 ? 'text-emerald-400' :
+                wallet.score >= 50 ? 'text-sky-400' :
+                'text-[var(--text-primary)]'
+              }`}>{wallet.score}</span>
+              <span className="text-xs text-[var(--text-muted)] font-mono">/ 100</span>
+            </div>
           </div>
           <div className="bg-[var(--bg-elevated)]/50 p-3 rounded-lg border border-[var(--border-subtle)]">
             <div className="text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
               <RefreshCw size={13} /> {tr('dwCyclesTitle')}
             </div>
-            <div className="font-mono-num text-xl font-bold text-emerald-400">{wallet.capitalCycles} {tr('dwTimesUnit')}</div>
+            <div className="font-mono-num text-2xl font-bold text-emerald-400">{wallet.capitalCycles} <span className="text-xs text-[var(--text-muted)] font-normal">{tr('dwTimesUnit')}</span></div>
           </div>
         </div>
+
+        {/* 评分构成雷达明细 */}
+        {wallet.scoreBreakdown && (
+          <div className="bg-[var(--bg-elevated)]/40 p-3 rounded-lg border border-[var(--border-subtle)] space-y-2 text-[11px]">
+            <div className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-between border-b border-[var(--border-subtle)]/50 pb-1.5">
+              <span>{tr('scoreBreakdown')} (100分制)</span>
+              <span className="font-mono text-emerald-400 font-bold">{wallet.score} pts</span>
+            </div>
+            <div className="space-y-1.5 pt-0.5">
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--text-secondary)]">资金闭环与往返:</span>
+                <span className="font-mono font-bold text-[var(--text-primary)]">{wallet.scoreBreakdown.cycle} <span className="text-[var(--text-muted)] font-normal">/ 40</span></span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--text-secondary)]">跨链频次与经验:</span>
+                <span className="font-mono font-bold text-[var(--text-primary)]">{wallet.scoreBreakdown.activity} <span className="text-[var(--text-muted)] font-normal">/ 25</span></span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--text-secondary)]">长尾代币敏锐度:</span>
+                <span className="font-mono font-bold text-[var(--text-primary)]">{wallet.scoreBreakdown.exotic} <span className="text-[var(--text-muted)] font-normal">/ 15</span></span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--text-secondary)]">单笔资金规模:</span>
+                <span className="font-mono font-bold text-[var(--text-primary)]">{wallet.scoreBreakdown.scale} <span className="text-[var(--text-muted)] font-normal">/ 10</span></span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--text-secondary)]">时效新鲜度:</span>
+                <span className="font-mono font-bold text-[var(--text-primary)]">{wallet.scoreBreakdown.recency} <span className="text-[var(--text-muted)] font-normal">/ 10</span></span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-[var(--bg-elevated)]/50 p-3.5 rounded-lg border border-[var(--border-subtle)] space-y-2 text-xs">
           <div className="flex justify-between">

@@ -2,6 +2,7 @@
 const db = require('../lib/db');
 const net = require('../lib/net');
 const store = require('../lib/store');
+const ArbDetector = require('../lib/arb-detector');
 
 function extractPairMetrics(p) {
   if (!p) return null;
@@ -119,7 +120,12 @@ async function main() {
       }
     }
 
-    console.log(`  -> ${opp.symbol}: buyLiq=$${opp.buyLiquidityUsd} | sellLiq=$${opp.sellLiquidityUsd} (quoteCash=$${opp.sellQuoteReserveUsd} ${opp.sellQuoteSymbol || ''}) | skewed=${opp.poolSkewed}`);
+    const scoreRes = ArbDetector.calculateOpportunityScore(opp);
+    opp.qualityScore = scoreRes.qualityScore;
+    opp.qualityGrade = scoreRes.qualityGrade;
+    opp.scoreComment = scoreRes.scoreComment;
+
+    console.log(`  -> ${opp.symbol}: Score=${opp.qualityScore}(${opp.qualityGrade}) | buyLiq=$${opp.buyLiquidityUsd} | sellLiq=$${opp.sellLiquidityUsd} (quoteCash=$${opp.sellQuoteReserveUsd} ${opp.sellQuoteSymbol || ''}) | skewed=${opp.poolSkewed}`);
     updatedOpps.push(opp);
   }
 

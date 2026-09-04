@@ -253,9 +253,14 @@ export const App: React.FC = () => {
                         <span className="text-[var(--text-secondary)] font-mono-num">{w.bridgeCount} {tr('bridgesCount')}</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-mono-num font-bold text-xs text-[#45c4b0] bg-[#45c4b0]/10 border border-[#45c4b0]/20 px-2 py-0.5 rounded">
-                        {w.score} {tr('scoreUnit')}
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <span className={`font-mono-num font-bold text-xs px-2 py-0.5 rounded border ${
+                        w.score >= 90 ? 'text-amber-400 bg-amber-400/15 border-amber-400/30' :
+                        w.score >= 75 ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' :
+                        w.score >= 50 ? 'text-sky-400 bg-sky-500/15 border-sky-500/30' :
+                        'text-[#45c4b0] bg-[#45c4b0]/10 border border-[#45c4b0]/20'
+                      }`}>
+                        {w.grade ? `${w.grade} · ` : ''}{w.score} {tr('scoreUnit')}
                       </span>
                     </div>
                   </div>

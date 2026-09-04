@@ -18,7 +18,7 @@ interface Props {
   sseConnected?: boolean;
 }
 
-type SortField = 'netProfit' | 'spread' | 'liquidity' | 'volume' | 'time';
+type SortField = 'score' | 'netProfit' | 'spread' | 'liquidity' | 'volume' | 'time';
 type SortOrder = 'desc' | 'asc';
 type VerdictFilter = 'all' | 'verified' | 'clean';
 
@@ -204,7 +204,9 @@ export const ArbitrageMatrix: React.FC<Props> = ({
       })
       .sort((a, b) => {
         let diff = 0;
-        if (sortField === 'netProfit') {
+        if (sortField === 'score') {
+          diff = a.netCalc.score - b.netCalc.score;
+        } else if (sortField === 'netProfit') {
           diff = a.netCalc.netProfitUsd - b.netCalc.netProfitUsd;
         } else if (sortField === 'spread') {
           diff = a.spreadPct - b.spreadPct;
@@ -422,6 +424,15 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                       <ArrowUpDown size={11} className="text-[var(--text-muted)]" />
                     </div>
                   </th>
+                  <th 
+                    onClick={() => toggleSort('score')}
+                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-primary)] text-center whitespace-nowrap"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>{tr('thArbScore')}</span>
+                      <ArrowUpDown size={11} className={sortField === 'score' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
+                    </div>
+                  </th>
                   <th className="py-2.5 px-3">{tr('dmColBuyLeg')}</th>
                   <th className="py-2.5 px-3">{tr('dmColBridgeRoute')}</th>
                   <th className="py-2.5 px-3">{tr('dmColSellLeg')}</th>
@@ -458,7 +469,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
               <tbody className="divide-y divide-[var(--border-subtle)]">
                 {processedData.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-16 text-[var(--text-muted)] text-xs">
+                    <td colSpan={9} className="text-center py-16 text-[var(--text-muted)] text-xs">
                       {tr('noOpps')}
                     </td>
                   </tr>
@@ -493,6 +504,25 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                             <div className="text-[10px] text-[var(--text-muted)] flex items-center gap-1 mt-0.5 font-mono">
                               <span className="text-[#45c4b0] font-bold">●</span>
                               <span>{agoSec(row.ts, locale)}</span>
+                            </div>
+                          </td>
+
+                          {/* 综合评分 */}
+                          <td className="py-2.5 px-3 whitespace-nowrap text-center">
+                            <div className="inline-flex flex-col items-center">
+                              <div className={`px-2 py-0.5 rounded text-xs font-mono font-bold border flex items-center gap-1 ${
+                                row.netCalc.score >= 85 ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm' :
+                                row.netCalc.score >= 70 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                row.netCalc.score >= 50 ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' :
+                                row.netCalc.score >= 25 ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' :
+                                'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                              }`} title={`综合评分明细 (100分制):\n• 净利: ${row.netCalc.scoreBreakdown.profitScore}/40\n• 储备: ${row.netCalc.scoreBreakdown.liquidityScore}/30\n• 通道: ${row.netCalc.scoreBreakdown.bridgeScore}/20\n• 活跃: ${row.netCalc.scoreBreakdown.volumeScore}/10\n• 扣分: -${row.netCalc.scoreBreakdown.penalty}`}>
+                                <span>{row.netCalc.scoreGrade}</span>
+                                <span className="font-mono-num">{row.netCalc.score}</span>
+                              </div>
+                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5 truncate max-w-[85px]" title={row.netCalc.scoreComment}>
+                                {row.netCalc.scoreComment}
+                              </span>
                             </div>
                           </td>
 
@@ -724,9 +754,9 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
                           return (
                             <tr className="bg-[var(--bg-elevated)]/25">
-                              <td colSpan={8} className="p-4 border-t border-[var(--border-subtle)]">
+                              <td colSpan={9} className="p-4 border-t border-[var(--border-subtle)]">
                                 {/* 链上实时询价打通状态横幅 */}
-                                <div className="mb-3.5 px-3.5 py-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div className="mb-2 px-3.5 py-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                   <div className="flex items-center gap-2">
                                     {isQuoting ? (
                                       <div className="flex items-center gap-2 text-sky-400 text-xs font-mono">
@@ -852,6 +882,36 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                         </>
                                       )}
                                     </button>
+                                  </div>
+                                </div>
+
+                                {/* 套利可行性综合评分横幅 (100分制) */}
+                                <div className="mb-3 px-3 py-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`px-2 py-0.5 rounded font-bold font-mono text-xs border flex items-center gap-1 ${
+                                      row.netCalc.score >= 85 ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm' :
+                                      row.netCalc.score >= 70 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                      row.netCalc.score >= 50 ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' :
+                                      row.netCalc.score >= 25 ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' :
+                                      'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                                    }`}>
+                                      <span className="font-extrabold">{row.netCalc.scoreGrade} 级</span>
+                                      <span className="font-mono-num">{row.netCalc.score} 分</span>
+                                    </div>
+                                    <span className="font-semibold text-[var(--text-primary)]">
+                                      {row.netCalc.scoreComment}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-[11px] font-mono text-[var(--text-secondary)]">
+                                    <span>净利: <strong className="text-[var(--text-primary)]">{row.netCalc.scoreBreakdown.profitScore}</strong>/40</span>
+                                    <span>储备: <strong className="text-[var(--text-primary)]">{row.netCalc.scoreBreakdown.liquidityScore}</strong>/30</span>
+                                    <span>通道: <strong className="text-[var(--text-primary)]">{row.netCalc.scoreBreakdown.bridgeScore}</strong>/20</span>
+                                    <span>活跃: <strong className="text-[var(--text-primary)]">{row.netCalc.scoreBreakdown.volumeScore}</strong>/10</span>
+                                    {row.netCalc.scoreBreakdown.penalty > 0 && (
+                                      <span className="text-rose-400 font-bold bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+                                        扣分 -{row.netCalc.scoreBreakdown.penalty}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
 

@@ -97,6 +97,7 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
             className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042]"
           >
             <option value="">{tr('wAllGrades')}</option>
+            <option value="S">{tr('wGradeS')}</option>
             <option value="A">{tr('wGradeA')}</option>
             <option value="B">{tr('wGradeB')}</option>
             <option value="C">{tr('wGradeC')}</option>
@@ -160,8 +161,10 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
                   >
                     <td className="py-2 px-3 font-sans">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        w.grade === 'S' ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40 shadow-sm' :
                         w.grade === 'A' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' :
                         w.grade === 'B' ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
+                        w.grade === 'C' ? 'bg-slate-500/20 text-slate-300 border border-slate-500/30' :
                         'bg-slate-700/20 text-[var(--text-muted)] border border-[var(--border-subtle)]'
                       }`}>
                         {w.grade}
@@ -185,7 +188,18 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
                         </button>
                       </div>
                     </td>
-                    <td className="py-2 px-3 text-right font-bold text-[var(--text-primary)]">{w.score}</td>
+                    <td className="py-2 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className={`font-mono-num font-bold text-xs ${
+                          w.score >= 90 ? 'text-amber-400' :
+                          w.score >= 75 ? 'text-emerald-400' :
+                          w.score >= 50 ? 'text-sky-400' :
+                          w.score >= 25 ? 'text-[var(--text-secondary)]' :
+                          'text-[var(--text-muted)]'
+                        }`}>{w.score}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono">/100</span>
+                      </div>
+                    </td>
                     <td className="py-2 px-3 text-right font-extrabold text-emerald-500">
                       {w.capitalCycles > 0 ? `${w.capitalCycles}` : <span className="text-[var(--text-muted)] font-normal">0</span>}
                     </td>
