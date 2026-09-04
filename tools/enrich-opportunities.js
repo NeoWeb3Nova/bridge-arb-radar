@@ -3,6 +3,7 @@ const db = require('../lib/db');
 const net = require('../lib/net');
 const store = require('../lib/store');
 const ArbDetector = require('../lib/arb-detector');
+const securityChecker = require('../lib/security-checker');
 
 function extractPairMetrics(p) {
   if (!p) return null;
@@ -119,6 +120,9 @@ async function main() {
         opp.verdict = 'suspicious';
       }
     }
+
+    // 执行代币合约貔貅与恶意税率体检
+    await securityChecker.checkOpportunitySecurity(opp, settings).catch(() => null);
 
     const scoreRes = ArbDetector.calculateOpportunityScore(opp);
     opp.qualityScore = scoreRes.qualityScore;

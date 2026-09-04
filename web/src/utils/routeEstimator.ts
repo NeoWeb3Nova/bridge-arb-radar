@@ -1,3 +1,5 @@
+import { SecurityCheckResult } from '../types';
+
 // Cross-chain arbitrage routing and net fee estimator
 export interface LiveQuoteData {
   ok: boolean;
@@ -170,7 +172,8 @@ export function calculateNetArb(
   capitalUsd = 1000,
   liveQuote?: LiveQuoteData | null,
   sellQuoteReserveUsd?: number,
-  buyBaseReserveUsd?: number
+  buyBaseReserveUsd?: number,
+  security?: SecurityCheckResult | null
 ): ArbNetCalculation {
   const defaultRoute = resolveBridgeRoute(buyChain, sellChain);
   const route: BridgeRouteInfo = (liveQuote && liveQuote.bridgeName) ? {
@@ -282,8 +285,14 @@ export function calculateNetArb(
   // 维度4: 市场活跃度底分 (10分)
   const volumeScore = 10;
 
-  // 扣分惩罚项：卖出池现金枯竭、极端滑点冲击、净亏损
+  // 扣分惩罚项：智能合约貔貅、卖出池现金枯竭、极端滑点冲击、净亏损
   let penalty = 0;
+  if (security?.isHoneypot || security?.riskLevel === 'danger') {
+    penalty += 60;
+  } else if (security?.riskLevel === 'warning') {
+    penalty += 20;
+  }
+
   if (isDrained || effectiveSellCash < 500) penalty += 50; // 现金枯竭
   else if (liquidityHealth === 'dangerous') penalty += 25;
   else if (liquidityHealth === 'moderate') penalty += 10;
@@ -295,12 +304,23 @@ export function calculateNetArb(
   const scoreGrade: 'S' | 'A' | 'B' | 'C' | 'D' = score >= 85 ? 'S' : (score >= 70 ? 'A' : (score >= 50 ? 'B' : (score >= 25 ? 'C' : 'D')));
 
   let scoreComment = '普通机会';
-  if (score >= 85) scoreComment = '极佳机会 · 净利与池深兼备';
-  else if (score >= 70) scoreComment = '优质机会 · 深度良好';
-  else if (score >= 50) scoreComment = '可行 · 容量有限需控单';
-  else if (isDrained || effectiveSellCash < 500) scoreComment = '高危 · 卖出池现金枯竭';
-  else if (netProfitUsd <= 0) scoreComment = '亏损 · 摩擦成本大于利差';
-  else scoreComment = '高风险 · 冲击过大深度过浅';
+  if (security?.isHoneypot || security?.riskLevel === 'danger') {
+    scoreComment = `高危 · ${security.riskReason || '智能合约貔貅 (无法卖出或恶意税率)'}`;
+  } else if (isDrained || effectiveSellCash < 500) {
+    scoreComment = '高危 · 卖出池现金枯竭';
+  } else if (score >= 85) {
+    scoreComment = '极佳机会 · 净利与池深兼备';
+  } else if (score >= 70) {
+    scoreComment = '优质机会 · 深度良好';
+  } else if (score >= 50) {
+    scoreComment = '可行 · 容量有限需控单';
+  } else if (security?.riskLevel === 'warning') {
+    scoreComment = `警惕 · ${security.riskReason || '存在代币税/限制'}`;
+  } else if (netProfitUsd <= 0) {
+    scoreComment = '亏损 · 摩擦成本大于利差';
+  } else {
+    scoreComment = '高风险 · 冲击过大深度过浅';
+  }
 
   const scoreBreakdown: ArbScoreBreakdown = {
     profitScore,

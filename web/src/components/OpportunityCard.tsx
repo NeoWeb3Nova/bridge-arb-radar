@@ -2,7 +2,7 @@ import React from 'react';
 import { OpportunityItem } from '../types';
 import { usd, usdCompact } from '../utils/format';
 import { VerdictBadge } from './VerdictBadge';
-import { ArrowRight, ExternalLink, Activity, Copy, Check, FileEdit } from 'lucide-react';
+import { ArrowRight, ExternalLink, Activity, Copy, Check, FileEdit, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 
 interface Props {
@@ -46,6 +46,33 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
                 {opp.symbol}
               </span>
               <VerdictBadge verdict={opp.verdict} size="xs" />
+              {opp.security && (
+                opp.security.isHoneypot ? (
+                  <span 
+                    className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse"
+                    title={`🚨 智能合约貔貅高危:\n${opp.security.riskReason}`}
+                  >
+                    <ShieldAlert size={10} className="text-rose-400" />
+                    <span>{locale === 'zh' ? '貔貅' : 'Honeypot'}</span>
+                  </span>
+                ) : opp.security.riskLevel === 'warning' ? (
+                  <span 
+                    className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+                    title={`⚠️ 代码风控提醒:\n${opp.security.riskReason}`}
+                  >
+                    <ShieldAlert size={10} className="text-amber-400" />
+                    <span>{locale === 'zh' ? '有税' : 'Tax'}</span>
+                  </span>
+                ) : (
+                  <span 
+                    className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                    title="✓ 智能合约代码体检通过: 0%买卖税 · 无貔貅限制"
+                  >
+                    <ShieldCheck size={10} className="text-emerald-400" />
+                    <span>0%税</span>
+                  </span>
+                )
+              )}
               {typeof opp.qualityScore === 'number' && (
                 <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
                   opp.qualityScore >= 85 ? 'bg-amber-400/20 text-amber-400 border-amber-400/40 shadow-sm' :

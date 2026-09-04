@@ -7,7 +7,7 @@ import { OpportunityCard } from './OpportunityCard';
 import { 
   ArrowRight, ExternalLink, Copy, Check, FileEdit, 
   ChevronDown, ChevronUp, Search, Filter, ArrowUpDown, 
-  Sparkles, ShieldCheck, Layers, LayoutGrid, Table, DollarSign,
+  Sparkles, ShieldCheck, ShieldAlert, Layers, LayoutGrid, Table, DollarSign,
   TrendingUp, CheckCircle, AlertTriangle, RefreshCw, Clock
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
@@ -194,7 +194,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
           capitalUsd,
           liveQuotes[key],
           opp.sellQuoteReserveUsd,
-          opp.buyBaseReserveUsd
+          opp.buyBaseReserveUsd,
+          opp.security
         );
         return {
           ...opp,
@@ -490,11 +491,38 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                         >
                           {/* 1. 资产与认证 */}
                           <td className="py-2.5 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-[var(--text-primary)] font-mono text-sm tracking-tight">
                                 {row.symbol}
                               </span>
                               <VerdictBadge verdict={row.verdict} size="xs" />
+                              {row.security && (
+                                row.security.isHoneypot ? (
+                                  <span 
+                                    className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse"
+                                    title={`🚨 智能合约貔貅高危:\n${row.security.riskReason}`}
+                                  >
+                                    <ShieldAlert size={10} className="text-rose-400" />
+                                    <span>{locale === 'zh' ? '高危貔貅' : 'Honeypot'}</span>
+                                  </span>
+                                ) : row.security.riskLevel === 'warning' ? (
+                                  <span 
+                                    className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+                                    title={`⚠️ 代码风控提醒:\n${row.security.riskReason}`}
+                                  >
+                                    <ShieldAlert size={10} className="text-amber-400" />
+                                    <span>{locale === 'zh' ? '有税/限制' : 'Tax/Risk'}</span>
+                                  </span>
+                                ) : (
+                                  <span 
+                                    className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                                    title={`✓ 智能合约代码体检通过:\n0%买卖税 · 无貔貅限制`}
+                                  >
+                                    <ShieldCheck size={10} className="text-emerald-400" />
+                                    <span>{locale === 'zh' ? '0%税安全' : '0% Tax'}</span>
+                                  </span>
+                                )
+                              )}
                               {row.decision?.status && (
                                 <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[#45c4b0]/15 text-[#45c4b0] border border-[#45c4b0]/25">
                                   {row.decision.status}
@@ -1064,6 +1092,52 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                         <span className="text-rose-400">✗ 警惕山寨同名貔貅假币，合约地址不匹配。</span>
                                       )}
                                     </div>
+
+                                    {/* GoPlus 智能合约貔貅与代码安全体检 */}
+                                    {row.security && (
+                                      <div className={`p-2 rounded border space-y-1.5 ${
+                                        row.security.isHoneypot
+                                          ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                                          : row.security.riskLevel === 'warning'
+                                          ? 'bg-amber-500/10 border-amber-500/25 text-amber-200'
+                                          : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                                      }`}>
+                                        <div className="flex items-center justify-between text-[11px] font-sans font-bold">
+                                          <div className="flex items-center gap-1">
+                                            {row.security.isHoneypot ? <ShieldAlert size={12} className="text-rose-400" /> : <ShieldCheck size={12} className="text-emerald-400" />}
+                                            <span>GoPlus 智能合约代码安全审计:</span>
+                                          </div>
+                                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${
+                                            row.security.isHoneypot
+                                              ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse'
+                                              : row.security.riskLevel === 'warning'
+                                              ? 'bg-amber-500/20 text-amber-300'
+                                              : 'bg-emerald-500/20 text-emerald-300'
+                                          }`}>
+                                            {row.security.isHoneypot ? '🚨 貔貅高危' : (row.security.riskLevel === 'warning' ? '⚠️ 存在风险' : '✓ 代码安全')}
+                                          </span>
+                                        </div>
+
+                                        <div className="text-[10px] leading-tight font-sans">
+                                          {row.security.riskReason}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 text-[9px] font-mono pt-1 border-t border-[var(--border-subtle)]/50">
+                                          <div className="bg-[var(--bg-base)]/60 p-1 rounded">
+                                            <div className="font-sans font-semibold text-[var(--text-secondary)]">买入端 ({row.buyChain}):</div>
+                                            <div>貔貅: {row.security.buySecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
+                                            <div>税率: 买{((row.security.buySecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖{((row.security.buySecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
+                                            <div>开源: {row.security.buySecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
+                                          </div>
+                                          <div className="bg-[var(--bg-base)]/60 p-1 rounded">
+                                            <div className="font-sans font-semibold text-[var(--text-secondary)]">卖出端 ({row.sellChain}):</div>
+                                            <div>貔貅: {row.security.sellSecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
+                                            <div>税率: 买{((row.security.sellSecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖{((row.security.sellSecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
+                                            <div>开源: {row.security.sellSecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
 
                                     {/* 双端流动性深度与 6h/24h 交易量审计 */}
                                     <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5 text-[10px] font-mono-num">

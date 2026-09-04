@@ -72,6 +72,35 @@ export interface OpportunityItem {
   qualityScore?: number;
   qualityGrade?: 'S' | 'A' | 'B' | 'C' | 'D';
   scoreComment?: string;
+  security?: SecurityCheckResult;
+}
+
+export interface TokenSecurityDetail {
+  safe: boolean;
+  isHoneypot: boolean;
+  buyTax: number;
+  sellTax: number;
+  cannotSellAll?: boolean;
+  isOpenSource?: boolean;
+  isBlacklisted?: boolean;
+  isProxy?: boolean;
+  transferPausable?: boolean;
+  freezable?: boolean;
+  isTrusted?: boolean;
+  riskLevel: 'safe' | 'warning' | 'danger';
+  riskReason?: string;
+  checkedAt?: string;
+}
+
+export interface SecurityCheckResult {
+  safe: boolean;
+  hasRisk: boolean;
+  isHoneypot: boolean;
+  riskLevel: 'safe' | 'warning' | 'danger';
+  riskReason?: string;
+  buySecurity?: TokenSecurityDetail | null;
+  sellSecurity?: TokenSecurityDetail | null;
+  checkedAt?: string;
 }
 
 export interface DecisionItem {

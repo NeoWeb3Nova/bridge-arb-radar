@@ -6,6 +6,7 @@ const ArbDetector = require('../lib/arb-detector');
 const store = require('../lib/store');
 const db = require('../lib/db');
 const hyperlane = require('../lib/sources/hyperlane');
+const securityChecker = require('../lib/security-checker');
 const { createApiRoutes } = require('../lib/routes');
 const { buildCsv, EXPORT_COLS } = require('../lib/routes/export-utils');
 
@@ -178,6 +179,74 @@ async function runTests() {
     };
     const drainedScore = ArbDetector.calculateOpportunityScore(drainedOpp);
     ok('枯竭池机会综合评分受到严惩归入 D 级 (<= 25分)', drainedScore.qualityScore <= 25 && drainedScore.qualityGrade === 'D');
+  }
+
+  console.log('\n=== 7. GoPlus 智能合约貔貅与恶意税率检测测试 ===');
+  {
+    // 1. 空参数容错
+    const emptySec = await securityChecker.checkTokenSecurity(null, null);
+    ok('空链或空地址安全检查优雅兜底通过', emptySec.safe === true && !emptySec.isHoneypot);
+
+    // 2. EVM 链真实可信代币体检 (BSC USDT)
+    const bscUsdt = await securityChecker.checkTokenSecurity('bsc', '0x55d398326f99059fF775485246999027B3197955');
+    ok('BSC USDT 代码体检判定为 safe', bscUsdt.safe === true);
+    ok('BSC USDT 貔貅标记为 false', bscUsdt.isHoneypot === false);
+    ok('BSC USDT 买卖税率均为 0%', bscUsdt.buyTax === 0 && bscUsdt.sellTax === 0);
+
+    // 3. Solana SVM 真实可信代币体检 (Solana USDC)
+    const solUsdc = await securityChecker.checkTokenSecurity('solana', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+    ok('Solana USDC 代码体检判定为 safe', solUsdc.safe === true);
+    ok('Solana USDC 貔貅标记为 false', solUsdc.isHoneypot === false);
+
+    // 4. 套利机会貔貅联动阻断测试
+    const honeypotOpp = {
+      symbol: 'FAKE_HONEY',
+      buyChain: 'bsc',
+      buyAddress: '0x1111111111111111111111111111111111111111',
+      sellChain: 'ethereum',
+      sellAddress: '0x2222222222222222222222222222222222222222',
+      spreadPct: 45.0,
+      minLiquidityUsd: 50000,
+      sellQuoteReserveUsd: 25000,
+      verdict: 'confirmed',
+      suspicious: false,
+      security: {
+        safe: false,
+        hasRisk: true,
+        isHoneypot: true,
+        riskLevel: 'danger',
+        riskReason: '智能合约貔貅 (不可卖出)',
+      }
+    };
+    const hpScore = ArbDetector.calculateOpportunityScore(honeypotOpp);
+    ok('貔貅套利机会评分受到严厉扣分 (归入 D 级)', hpScore.qualityScore <= 25 && hpScore.qualityGrade === 'D');
+    ok('貔貅套利机会评语包含高危貔貅警告', hpScore.scoreComment.includes('貔貅'));
+
+    // 5. 恶意税率判定逻辑测试 (>= 30% 判貔貅)
+    const highTaxOpp = {
+      spreadPct: 15.0,
+      minLiquidityUsd: 50000,
+      sellQuoteReserveUsd: 25000,
+      buyChain: 'arbitrum',
+      sellChain: 'base',
+      security: {
+        safe: false,
+        hasRisk: true,
+        isHoneypot: true,
+        riskLevel: 'danger',
+        riskReason: '恶意卖出税率 (35%)',
+      }
+    };
+    const highTaxScore = ArbDetector.calculateOpportunityScore(highTaxOpp);
+    ok('高恶税机会自动定性为危险扣分并归入 D 级', highTaxScore.qualityScore <= 35 && highTaxScore.qualityGrade === 'D' && highTaxScore.scoreComment.includes('高危'));
+
+    // 6. API 路由 /api/security/check 连通性测试
+    const api = createApiRoutes({ isScanning: () => false, setScanning: () => {}, scheduleScan: () => {}, getNextScanAtMs: () => null });
+    const missingRes = await api['/api/security/check']({ query: {} });
+    ok('API 缺省参数返回错误提示', missingRes.ok === false);
+
+    const apiSecRes = await api['/api/security/check']({ query: { chain: 'bsc', address: '0x55d398326f99059fF775485246999027B3197955' } });
+    ok('API 正常查询代币安全返回 ok: true', apiSecRes.ok === true && apiSecRes.result.safe === true);
   }
 
   console.log(`\n============================`);
