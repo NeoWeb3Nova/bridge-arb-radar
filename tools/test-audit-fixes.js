@@ -285,6 +285,17 @@ async function runTests() {
     ok('正常 3% 跨链价差判定为 confirmed', bestNormal.verdict === 'confirmed');
     ok('正常 3% 跨链价差未误触同名不同币熔断', !bestNormal.isSymbolCollision && !bestNormal.collisionRisk);
     ok('正常跨链机会评分处于优质区间', bestNormal.qualityScore >= 60);
+
+    // 5. 粉尘池（如 Berachain 0.65 美元 Kodiak 池）必须被过滤排除
+    const dustPoolQuotes = [
+      { chain: 'berachain', priceUsd: 0.0119, liquidityUsd: 0.65, dex: 'kodiak', verdict: 'official', baseTokenName: 'HarryPotterObamaSonic10Inu' },
+      { chain: 'ethereum', priceUsd: 0.0190, liquidityUsd: 1100000, dex: 'uniswap', verdict: 'official', baseTokenName: 'HarryPotterObamaSonic10Inu' },
+      { chain: 'bsc', priceUsd: 0.0195, liquidityUsd: 27000, dex: 'uniswap', verdict: 'official', baseTokenName: 'HarryPotterObamaSonic10Inu' },
+    ];
+    const bestDustFiltered = ArbDetector.evaluateBestOpportunity({ symbol: 'BITCOIN', quotes: dustPoolQuotes });
+    ok('0.65 美元粉尘池被坚决排除，买入腿选出真实深度池', bestDustFiltered.buyChain === 'ethereum');
+    ok('排除粉尘池后选出的真实买入价格为 0.0190 而非 0.0119', bestDustFiltered.buyPrice === 0.0190);
+    ok('排除粉尘池后价差为真实健康价差 (约 2.6%) 而非虚假 63%', bestDustFiltered.spreadPct < 5);
   }
 
   console.log(`\n============================`);

@@ -76,6 +76,7 @@ export const TokenCheckModal: React.FC<Props> = ({
     best.collisionRisk === true ||
     best.isSymbolCollision === true ||
     best.spreadPct > 100 ||
+    (best.minLiquidityUsd !== undefined && best.minLiquidityUsd < 500) ||
     (best.sellQuoteReserveUsd !== undefined && best.sellQuoteReserveUsd < 300)
   );
 
@@ -459,7 +460,18 @@ export const TokenCheckModal: React.FC<Props> = ({
                           {q.priceUsd > 0 ? usd(q.priceUsd) : '—'}
                         </td>
                         <td className="py-2 px-2.5 text-[var(--text-secondary)]">
-                          {q.liquidityUsd ? usd(q.liquidityUsd) : '—'}
+                          {q.liquidityUsd !== undefined && q.liquidityUsd !== null ? (
+                            <div className="flex items-center gap-1">
+                              <span className={q.liquidityUsd < 500 ? 'text-rose-400 font-semibold' : ''}>
+                                {usd(q.liquidityUsd)}
+                              </span>
+                              {q.liquidityUsd < 500 && (
+                                <span className="px-1 py-0.2 rounded text-[9px] font-sans bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                  粉尘池
+                                </span>
+                              )}
+                            </div>
+                          ) : '—'}
                         </td>
                         <td className="py-2 px-2.5 text-[var(--text-muted)]">
                           {q.volume24h ? usdCompact(q.volume24h) : '—'}
