@@ -272,7 +272,15 @@ export const App: React.FC = () => {
 
         {tab === 'feed' && <FeedTable />}
         {tab === 'wallets' && <WalletsView onSelectWallet={(w) => setSelectedWallet(w)} />}
-        {tab === 'tokens' && <TokensView />}
+        {tab === 'tokens' && (
+          <TokensView 
+            onNavigateToDash={() => setTab('dash')}
+            onSelectOpp={(opp) => {
+              setSelectedOpp(opp);
+              setTab('dash');
+            }}
+          />
+        )}
         {tab === 'spread' && <SpreadChecker />}
         {tab === 'decisions' && <DecisionLedger />}
       </main>

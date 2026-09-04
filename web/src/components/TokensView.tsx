@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { short, ago } from '../utils/format';
 import { Search, Star, ExternalLink, Zap } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
+import { TokenCheckModal, TokenCheckReport } from './TokenCheckModal';
+import { OpportunityItem } from '../types';
 
 interface TokenItem {
   chain: string;
@@ -16,13 +18,19 @@ interface TokenItem {
   wallets?: Record<string, number>;
 }
 
-export const TokensView: React.FC = () => {
+interface Props {
+  onNavigateToDash?: () => void;
+  onSelectOpp?: (opp: OpportunityItem) => void;
+}
+
+export const TokensView: React.FC<Props> = ({ onNavigateToDash, onSelectOpp }) => {
   const { t: tr } = useI18n();
   const [tokens, setTokens] = useState<TokenItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [unknownOnly, setUnknownOnly] = useState(false);
   const [checkingKey, setCheckingKey] = useState<string | null>(null);
+  const [report, setReport] = useState<TokenCheckReport | null>(null);
 
   const loadTokens = async () => {
     setLoading(true);
@@ -52,11 +60,19 @@ export const TokensView: React.FC = () => {
     const k = `${t.chain}:${t.address}`;
     setCheckingKey(k);
     try {
-      await fetch('/api/token/check', {
+      const res = await fetch('/api/token/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chain: t.chain, address: t.address }),
       });
+      const data = await res.json();
+      if (data.ok && data.result) {
+        setReport({
+          token: { chain: t.chain, address: t.address, symbol: t.symbol },
+          result: data.result,
+          security: data.security || data.result.best?.security || null,
+        });
+      }
       loadTokens();
     } catch (e) {
       console.error(e);
@@ -199,6 +215,15 @@ export const TokensView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {report && (
+        <TokenCheckModal
+          report={report}
+          onClose={() => setReport(null)}
+          onNavigateToDash={onNavigateToDash}
+          onSelectOpp={onSelectOpp}
+        />
+      )}
     </div>
   );
 };
