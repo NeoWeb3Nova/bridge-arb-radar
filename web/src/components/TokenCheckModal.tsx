@@ -71,6 +71,14 @@ export const TokenCheckModal: React.FC<Props> = ({
     onClose();
   };
 
+  const isFakeOrCollision = !!best && (
+    best.verdict === 'fake' ||
+    best.collisionRisk === true ||
+    best.isSymbolCollision === true ||
+    best.spreadPct > 100 ||
+    (best.sellQuoteReserveUsd !== undefined && best.sellQuoteReserveUsd < 300)
+  );
+
   // 计算多链最高价与最低价点差
   const validQuotes = quotes.filter(q => q && q.priceUsd > 0);
   let maxQuoteSpread = 0;
@@ -143,7 +151,8 @@ export const TokenCheckModal: React.FC<Props> = ({
         {/* 内容滚动区 */}
         <div className="p-4 space-y-4 overflow-y-auto flex-1 text-xs">
           {/* 1. 核心套利产出卡片 (发现机会 VS 未发现机会) */}
-          {best ? (
+          {/* 1. 核心套利产出卡片 (真实机会 VS 假套利拦截 VS 无套利空间) */}
+          {best && !isFakeOrCollision ? (
             <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -181,6 +190,11 @@ export const TokenCheckModal: React.FC<Props> = ({
                   <div className="font-bold text-[var(--text-primary)] text-sm">
                     {best.buyChainName} · {best.buyDex}
                   </div>
+                  {best.buyTokenName && (
+                    <div className="text-[10px] text-[var(--text-secondary)] font-sans truncate" title={best.buyTokenName}>
+                      {best.buyTokenName}
+                    </div>
+                  )}
                   <div className="text-[#f5c042] font-semibold mt-0.5">
                     {usd(best.buyPrice)}
                   </div>
@@ -200,6 +214,11 @@ export const TokenCheckModal: React.FC<Props> = ({
                   <div className="font-bold text-[var(--text-primary)] text-sm">
                     {best.sellChainName} · {best.sellDex}
                   </div>
+                  {best.sellTokenName && (
+                    <div className="text-[10px] text-[var(--text-secondary)] font-sans truncate" title={best.sellTokenName}>
+                      {best.sellTokenName}
+                    </div>
+                  )}
                   <div className="text-emerald-400 font-bold mt-0.5">
                     {usd(best.sellPrice)}
                   </div>
@@ -223,6 +242,93 @@ export const TokenCheckModal: React.FC<Props> = ({
                   <span>{locale === 'zh' ? '前往机会矩阵查看' : 'View in Matrix'}</span>
                   <ArrowRight size={12} />
                 </button>
+              </div>
+            </div>
+          ) : isFakeOrCollision ? (
+            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert size={16} className="text-rose-400 shrink-0" />
+                  <span className="font-bold text-sm text-rose-400">
+                    {locale === 'zh' ? '🚨 假套利拦截 · 证实为同名不同币 (Symbol Collision)' : '🚨 Fake Arbitrage Blocked · Symbol Collision'}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    +{best.spreadPct.toFixed(1)}% 虚假纸面价差
+                  </span>
+                </div>
+
+                <div className="px-2 py-0.5 rounded font-mono font-bold text-xs border flex items-center gap-1 bg-rose-500/20 text-rose-300 border-rose-500/30">
+                  <span>D 级 · 0 分</span>
+                  <span className="text-[10px] font-normal font-sans ml-1 text-rose-300/80">
+                    ({best.scoreComment || '假套利 · 无承兑通道'})
+                  </span>
+                </div>
+              </div>
+
+              {/* 警示说明框 */}
+              <div className="p-2.5 rounded bg-rose-950/40 border border-rose-500/30 text-[11px] text-rose-200/95 leading-relaxed font-sans">
+                <div className="font-bold flex items-center gap-1 mb-1 text-rose-300">
+                  <span>⚠️ 为什么这不是真实套利机会？</span>
+                </div>
+                <div>
+                  虽然两条链上的代币符号均为 <strong className="text-white font-mono">{token.symbol}</strong>，但经链上元数据与流动性深度穿透核验，证实两端属于<strong>两个完全独立的代币项目或操纵假池</strong>。
+                  两链之间<strong>不存在任何可通兑互换的跨链桥通道</strong>。若在低价链买入尝试跨链，资产将无法入账或直接归零！系统已对该虚假价差实施安全阻断。
+                </div>
+              </div>
+
+              {/* 买卖两端资产比对 */}
+              <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2 p-2.5 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] font-mono-num">
+                <div>
+                  <div className="text-[10px] text-[var(--text-muted)] font-sans">
+                    {locale === 'zh' ? '低价端代币' : 'Low Price Leg'}
+                  </div>
+                  <div className="font-bold text-[var(--text-primary)] text-sm">
+                    {best.buyChainName} · {best.buyDex}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-secondary)] font-sans truncate" title={best.buyTokenName || ''}>
+                    项目: {best.buyTokenName || token.symbol}
+                  </div>
+                  <div className="text-[#f5c042] font-semibold mt-0.5">
+                    {usd(best.buyPrice)}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center px-1 text-rose-400">
+                  <span className="text-[8px] font-mono uppercase mb-0.5 text-rose-400/80">无承兑通道</span>
+                  <div className="w-6 h-5 rounded bg-rose-500/20 flex items-center justify-center text-rose-400 border border-rose-500/40">
+                    <X size={12} />
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[10px] text-[var(--text-muted)] font-sans">
+                    {locale === 'zh' ? '高价端代币' : 'High Price Leg'}
+                  </div>
+                  <div className="font-bold text-[var(--text-primary)] text-sm">
+                    {best.sellChainName} · {best.sellDex}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-secondary)] font-sans truncate" title={best.sellTokenName || ''}>
+                    项目: {best.sellTokenName || token.symbol}
+                  </div>
+                  <div className="text-rose-400 font-bold mt-0.5">
+                    {usd(best.sellPrice)}
+                  </div>
+                </div>
+              </div>
+
+              {/* 底部拦截反馈 */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="text-[11px] text-rose-300/80 flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
+                  <span>
+                    {locale === 'zh' 
+                      ? '系统已阻断该虚假信号，未将其沉淀至首页套利矩阵，有效杜绝误操作亏损' 
+                      : 'Blocked from Arbitrage Matrix to prevent loss.'}
+                  </span>
+                </div>
+                <span className="px-3 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-xs">
+                  {locale === 'zh' ? '🛡️ 已安全拦截 (杜绝损失)' : '🛡️ Blocked'}
+                </span>
               </div>
             </div>
           ) : (

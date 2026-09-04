@@ -61,6 +61,11 @@ export interface OpportunityItem {
   sellQuoteSymbol?: string | null;
   sellQuoteRatio?: number;
   poolSkewed?: boolean;
+  isSymbolCollision?: boolean;
+  collisionRisk?: boolean;
+  collisionReason?: string | null;
+  buyTokenName?: string | null;
+  sellTokenName?: string | null;
   suspicious: boolean;
   verdict: AdjudicationVerdict;
   verified: boolean;

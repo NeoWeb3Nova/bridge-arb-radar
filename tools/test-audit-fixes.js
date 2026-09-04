@@ -249,6 +249,44 @@ async function runTests() {
     ok('API 正常查询代币安全返回 ok: true', apiSecRes.ok === true && apiSecRes.result.safe === true);
   }
 
+  console.log('\n=== 8. 同名不同币 (Symbol Collision) 与极端价差熔断测试 ===');
+  {
+    // 1. 跨链价差 > 100% 自动判定为同名不同币碰撞并设为 fake
+    const extremeSpreadQuotes = [
+      { chain: 'bsc', priceUsd: 1.0, liquidityUsd: 50000, dex: 'pancake', verdict: 'official', baseTokenName: 'BitcoinOS' },
+      { chain: 'ethereum', priceUsd: 3.5, liquidityUsd: 50000, dex: 'uniswap', verdict: 'official', baseTokenName: 'BitcoinOS' },
+    ];
+    const bestExtreme = ArbDetector.evaluateBestOpportunity({ symbol: 'BOS', quotes: extremeSpreadQuotes });
+    ok('跨链价差 > 100% (比率 >= 2.0x) 触发同名不同币熔断', bestExtreme.isSymbolCollision === true && bestExtreme.collisionRisk === true);
+    ok('触发同名不同币熔断后 verdict 强制裁决为 fake', bestExtreme.verdict === 'fake');
+    ok('触发同名不同币熔断后综合评分清零归入 D 级', bestExtreme.qualityScore === 0 && bestExtreme.qualityGrade === 'D');
+    ok('评语明确指出假套利与同名不同币', bestExtreme.scoreComment.includes('假套利') && bestExtreme.scoreComment.includes('同名不同币'));
+
+    // 2. 代币全称不匹配（如 BitcoinOS vs BOSagora）自动判定为 fake
+    const nameMismatchQuotes = [
+      { chain: 'bsc', priceUsd: 1.0, liquidityUsd: 50000, dex: 'pancake', verdict: 'official', baseTokenName: 'BitcoinOS Token' },
+      { chain: 'arbitrum', priceUsd: 1.08, liquidityUsd: 50000, dex: 'camelot', verdict: 'official', baseTokenName: 'BOSagora Network' },
+    ];
+    const bestMismatch = ArbDetector.evaluateBestOpportunity({ symbol: 'BOS', quotes: nameMismatchQuotes });
+    ok('代币全称不匹配触发 isSymbolCollision', bestMismatch.isSymbolCollision === true);
+    ok('代币全称不匹配 verdict 强制裁决为 fake', bestMismatch.verdict === 'fake');
+    ok('不匹配原因包含两端代币全称对比', bestMismatch.collisionReason.includes('BitcoinOS') && bestMismatch.collisionReason.includes('BOSagora'));
+
+    // 3. cleanName 规范化辅助函数有效性
+    ok('cleanName 过滤包装后缀', ArbDetector.cleanName('Tether USD (PoS)') === 'tetherusd');
+    ok('cleanName 过滤 Bridged/Wrapped 标识', ArbDetector.cleanName('Bridged Wrapped Ether') === 'ether');
+
+    // 4. 正常跨链套利不受误杀
+    const normalQuotes = [
+      { chain: 'bsc', priceUsd: 1.00, liquidityUsd: 50000, quoteReserveUsd: 25000, quoteRatio: 0.5, volume24h: 10000, dex: 'pancake', verdict: 'official', baseTokenName: 'USD Coin' },
+      { chain: 'arbitrum', priceUsd: 1.03, liquidityUsd: 60000, quoteReserveUsd: 30000, quoteRatio: 0.5, volume24h: 12000, dex: 'camelot', verdict: 'official', baseTokenName: 'USD Coin' },
+    ];
+    const bestNormal = ArbDetector.evaluateBestOpportunity({ symbol: 'USDC', quotes: normalQuotes });
+    ok('正常 3% 跨链价差判定为 confirmed', bestNormal.verdict === 'confirmed');
+    ok('正常 3% 跨链价差未误触同名不同币熔断', !bestNormal.isSymbolCollision && !bestNormal.collisionRisk);
+    ok('正常跨链机会评分处于优质区间', bestNormal.qualityScore >= 60);
+  }
+
   console.log(`\n============================`);
   console.log(`总计测试: ${passed + failed} | 通过: ${passed} | 失败: ${failed}`);
   if (failed > 0) process.exit(1);
