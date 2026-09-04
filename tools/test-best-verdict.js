@@ -67,7 +67,19 @@ async function main() {
   };
   await runCase('双官方腿真币', confirmed, { verdict: 'confirmed', verified: true, buyVerdict: 'confirmed', sellVerdict: 'confirmed', buyExplorerHost: 'etherscan' });
 
-  // 场景 B 未覆盖（needAdj 决疑路径复杂），此处仅验证 fast 路径行为。
+  // 场景 B：同一条链既有最低又有最高，但中间有其他链可形成跨链套利对
+  const ArbDetector = require('../lib/arb-detector');
+  const multiQuotes = [
+    { chain: 'bsc', priceUsd: 1.00, liquidityUsd: 20000, dex: 'pancake1', verdict: 'official' },
+    { chain: 'arbitrum', priceUsd: 1.05, liquidityUsd: 20000, dex: 'camelot', verdict: 'official' },
+    { chain: 'bsc', priceUsd: 1.10, liquidityUsd: 20000, dex: 'pancake2', verdict: 'official' },
+  ];
+  const multiBest = ArbDetector.evaluateBestOpportunity({ symbol: 'MULTI', quotes: multiQuotes });
+  ok('同链极值场景：能正确选出跨链最佳买卖腿', !!multiBest);
+  if (multiBest) {
+    ok('同链极值场景：买卖链不相同', multiBest.buyChain !== multiBest.sellChain);
+    ok('同链极值场景：价差为正', multiBest.spreadPct > 0);
+  }
 
   // 恢复打桩
   resolver.resolveSymbol = realResolve;

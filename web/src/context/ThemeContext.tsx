@@ -15,7 +15,18 @@ const ThemeContext = createContext<ThemeContextType>({
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('bar_theme');
-    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+    const initial: Theme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (initial === 'light') {
+        root.classList.add('light');
+        root.classList.remove('dark');
+      } else {
+        root.classList.add('dark');
+        root.classList.remove('light');
+      }
+    }
+    return initial;
   });
 
   useEffect(() => {

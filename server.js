@@ -30,29 +30,45 @@ function json(res, code, data) {
   res.end(body);
 }
 
+const MAX_BODY_BYTES = 20 * 1024 * 1024; // 20MB 上限
+
 function readBody(req) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    let size = 0;
     const chunks = [];
-    req.on('data', (c) => chunks.push(c));
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        req.destroy(new Error('Payload too large'));
+        return reject(new Error('请求体超出限制 (最大 20MB)'));
+      }
+      chunks.push(c);
+    });
     req.on('end', () => {
       const raw = Buffer.concat(chunks).toString('utf8');
       if (!raw) return resolve({});
       try { resolve(JSON.parse(raw)); } catch { resolve({}); }
     });
+    req.on('error', () => resolve({}));
   });
 }
 
 function serveStatic(req, res, pathname) {
   const rel = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
   const file = path.join(PUBLIC_DIR, rel);
-  if (!file.startsWith(PUBLIC_DIR) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+  if ((!file.startsWith(PUBLIC_DIR + path.sep) && file !== PUBLIC_DIR && file !== path.join(PUBLIC_DIR, 'index.html')) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('404');
     return;
   }
   const ext = path.extname(file).toLowerCase();
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
-  fs.createReadStream(file).pipe(res);
+  const stream = fs.createReadStream(file);
+  stream.on('error', () => {
+    if (!res.headersSent) res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('500');
+  });
+  stream.pipe(res);
 }
 
 // ---------------- 调度 ----------------

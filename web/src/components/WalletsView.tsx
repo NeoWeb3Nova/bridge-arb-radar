@@ -72,19 +72,19 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
       <div className="terminal-panel p-3 rounded-lg flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="search"
               placeholder={tr('wSearchPh')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && loadWallets()}
-              className="w-full bg-slate-950/70 dark:bg-slate-950/70 border border-slate-800 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md pl-8 pr-3 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
             />
           </div>
           <button
             onClick={loadWallets}
-            className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer"
+            className="px-3 py-1.5 rounded-md bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] text-xs font-semibold cursor-pointer"
           >
             {tr('wSearchBtn')}
           </button>
@@ -94,7 +94,7 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
           <select
             value={grade}
             onChange={(e) => setGrade(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none"
+            className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042]"
           >
             <option value="">{tr('wAllGrades')}</option>
             <option value="A">{tr('wGradeA')}</option>
@@ -106,7 +106,7 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none"
+            className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042]"
           >
             <option value="score">{tr('wSortScore')}</option>
             <option value="cycles">{tr('wSortCycles')}</option>
@@ -115,12 +115,12 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
             <option value="recent">{tr('wSortRecent')}</option>
           </select>
 
-          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] cursor-pointer">
             <input
               type="checkbox"
               checked={hideContracts}
               onChange={(e) => setHideContracts(e.target.checked)}
-              className="rounded bg-slate-900 border-slate-800"
+              className="rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
             />
             <span>{tr('wHideContracts')}</span>
           </label>
@@ -128,10 +128,10 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
       </div>
 
       {/* 钱包表格 */}
-      <div className="terminal-panel rounded-lg overflow-hidden border border-slate-800/80">
+      <div className="terminal-panel rounded-lg overflow-hidden border border-[var(--border-subtle)]">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/80 text-slate-400 font-medium tracking-tight text-[11px] border-b border-slate-800">
+          <table className="w-full text-left text-xs text-[var(--text-primary)]">
+            <thead className="bg-[var(--bg-elevated)]/60 text-[var(--text-secondary)] font-medium tracking-tight text-[11px] border-b border-[var(--border-subtle)]">
               <tr>
                 <th className="py-2.5 px-3">{tr('thGrade')}</th>
                 <th className="py-2.5 px-3">{tr('thAddress')}</th>
@@ -144,10 +144,10 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
                 <th className="py-2.5 px-3 text-center">{tr('thAction')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono-num">
+            <tbody className="divide-y divide-[var(--border-subtle)] font-mono-num">
               {wallets.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-slate-500 font-sans">
+                  <td colSpan={9} className="text-center py-12 text-[var(--text-muted)] font-sans">
                     {loading ? tr('searching') : tr('wNoData')}
                   </td>
                 </tr>
@@ -156,51 +156,51 @@ export const WalletsView: React.FC<Props> = ({ onSelectWallet }) => {
                   <tr
                     key={w.address}
                     onClick={() => onSelectWallet(w)}
-                    className="hover:bg-slate-800/40 transition duration-150 cursor-pointer"
+                    className="hover:bg-[var(--bg-elevated)]/40 transition duration-150 cursor-pointer"
                   >
                     <td className="py-2 px-3 font-sans">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         w.grade === 'A' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' :
                         w.grade === 'B' ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
-                        'bg-slate-800 text-slate-400 border border-slate-700'
+                        'bg-slate-700/20 text-[var(--text-muted)] border border-[var(--border-subtle)]'
                       }`}>
                         {w.grade}
                       </span>
                     </td>
-                    <td className="py-2 px-3 font-mono text-slate-200">
+                    <td className="py-2 px-3 font-mono text-[var(--text-primary)]">
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => toggleStar(e, w)}
-                          className={`hover:scale-110 transition ${w.starred ? 'text-amber-400' : 'text-slate-600 hover:text-slate-400'}`}
+                          className={`hover:scale-110 transition ${w.starred ? 'text-amber-400' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
                         >
                           <Star size={13} fill={w.starred ? 'currentColor' : 'none'} />
                         </button>
                         <span>{short(w.address, 8)}</span>
                         <button
                           onClick={(e) => handleCopy(e, w.address)}
-                          className="text-slate-500 hover:text-slate-300 transition"
+                          className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
                           title="复制完整地址"
                         >
                           {copied === w.address ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                         </button>
                       </div>
                     </td>
-                    <td className="py-2 px-3 text-right font-bold text-slate-100">{w.score}</td>
-                    <td className="py-2 px-3 text-right font-extrabold text-emerald-500 dark:text-emerald-400">
-                      {w.capitalCycles > 0 ? `${w.capitalCycles}` : <span className="text-slate-500 font-normal">0</span>}
+                    <td className="py-2 px-3 text-right font-bold text-[var(--text-primary)]">{w.score}</td>
+                    <td className="py-2 px-3 text-right font-extrabold text-emerald-500">
+                      {w.capitalCycles > 0 ? `${w.capitalCycles}` : <span className="text-[var(--text-muted)] font-normal">0</span>}
                     </td>
-                    <td className="py-2 px-3 text-right text-slate-300">{w.bridgeCount}</td>
-                    <td className="py-2 px-3 text-right text-slate-400">{w.roundtrips}</td>
+                    <td className="py-2 px-3 text-right text-[var(--text-primary)]">{w.bridgeCount}</td>
+                    <td className="py-2 px-3 text-right text-[var(--text-secondary)]">{w.roundtrips}</td>
                     <td className="py-2 px-3 font-sans">
                       <div className="flex flex-wrap gap-1">
                         {(w.autoTags || []).slice(0, 3).map((tag, i) => (
-                          <span key={i} className="px-1.5 py-0.2 rounded text-[10px] bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                          <span key={i} className="px-1.5 py-0.2 rounded text-[10px] bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">
                             {tag}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="py-2 px-3 text-slate-400 text-[11px] whitespace-nowrap">{ago(w.lastSeen)}</td>
+                    <td className="py-2 px-3 text-[var(--text-muted)] text-[11px] whitespace-nowrap">{ago(w.lastSeen)}</td>
                     <td className="py-2 px-3 text-center font-sans">
                       <a
                         href={`https://debank.com/profile/${w.address}`}

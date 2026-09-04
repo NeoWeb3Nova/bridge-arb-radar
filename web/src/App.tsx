@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { AppState, WalletItem } from './types';
+import { AppState, WalletItem, OpportunityItem } from './types';
 import { OpportunityCard } from './components/OpportunityCard';
+import { ArbitrageMatrix } from './components/ArbitrageMatrix';
 import { WalletDrawer } from './components/WalletDrawer';
+import { DecisionModal } from './components/DecisionModal';
 import { FeedTable } from './components/FeedTable';
 import { WalletsView } from './components/WalletsView';
 import { TokensView } from './components/TokensView';
@@ -24,6 +26,7 @@ export const App: React.FC = () => {
   const [tab, setTab] = useState<'dash' | 'feed' | 'wallets' | 'tokens' | 'spread' | 'decisions'>('dash');
   const [state, setState] = useState<AppState | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletItem | null>(null);
+  const [selectedOpp, setSelectedOpp] = useState<OpportunityItem | null>(null);
   const [scanning, setScanning] = useState(false);
   const [sseConnected, setSseConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -67,9 +70,9 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070604] text-slate-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
       {/* 顶部 Impeccable 极简典雅导航条 */}
-      <header className="border-b border-white/[0.08] bg-[#0d0c0a]/90 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-15 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             {/* Impeccable 几何 Logo 标记 */}
@@ -81,14 +84,14 @@ export const App: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-display text-xl tracking-wider uppercase font-bold text-white leading-none">
+                <span className="font-display text-xl tracking-wider uppercase font-bold text-[var(--text-primary)] leading-none">
                   Bridge Arb Radar
                 </span>
                 <span className="px-1.5 py-0.2 rounded text-[9px] uppercase tracking-widest bg-[#f5c042]/15 text-[#f5c042] border border-[#f5c042]/30 font-bold">
                   Impeccable
                 </span>
               </div>
-              <div className="text-[11px] text-[#a39e93] tracking-tight hidden sm:block mt-0.5">
+              <div className="text-[11px] text-[var(--text-secondary)] tracking-tight hidden sm:block mt-0.5">
                 {tr('tagline')}
               </div>
             </div>
@@ -96,9 +99,9 @@ export const App: React.FC = () => {
 
           <div className="flex items-center gap-2.5">
             {/* 状态指示 */}
-            <div className="flex items-center gap-3 text-xs text-[#a39e93] border-r border-white/[0.08] pr-3">
+            <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)] border-r border-[var(--border-subtle)] pr-3">
               <div className="flex items-center gap-1.5 font-mono text-[11px] hidden md:flex">
-                <Clock size={12} className="text-[#6e695e]" />
+                <Clock size={12} className="text-[var(--text-muted)]" />
                 <span>{tr('lastScan')}: {ago(state?.lastScanAt)}</span>
               </div>
               <div className="flex items-center gap-1.5 font-medium">
@@ -110,7 +113,7 @@ export const App: React.FC = () => {
             {/* 语言切换 */}
             <button
               onClick={toggleLocale}
-              className="px-2 py-1 rounded hover:bg-white/[0.06] text-[#a39e93] hover:text-[#ece8e1] text-xs font-mono font-semibold transition cursor-pointer flex items-center gap-1"
+              className="px-2 py-1 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-mono font-semibold transition cursor-pointer flex items-center gap-1"
               title="中英双语 / Language"
             >
               <Languages size={14} />
@@ -120,7 +123,7 @@ export const App: React.FC = () => {
             {/* 主题切换 */}
             <button
               onClick={toggleTheme}
-              className="p-1.5 rounded hover:bg-white/[0.06] text-[#a39e93] hover:text-[#ece8e1] transition cursor-pointer"
+              className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
               title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
             >
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
@@ -129,7 +132,7 @@ export const App: React.FC = () => {
             {/* 设置按钮 */}
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-1.5 rounded hover:bg-white/[0.06] text-[#a39e93] hover:text-[#ece8e1] transition cursor-pointer"
+              className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
               title={tr('settingsTitle')}
             >
               <Settings size={15} />
@@ -148,7 +151,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* 导航标签 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-6 text-xs font-medium border-t border-white/[0.06] overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-6 text-xs font-medium border-t border-[var(--border-subtle)] overflow-x-auto">
           {[
             { id: 'dash', label: tr('tabDash'), icon: <Layers size={14} /> },
             { id: 'feed', label: tr('tabFeed'), icon: <Radio size={14} /> },
@@ -163,7 +166,7 @@ export const App: React.FC = () => {
               className={`py-2.5 border-b-2 flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer tracking-tight ${
                 tab === item.id 
                   ? 'border-[#f5c042] text-[#f5c042] font-semibold' 
-                  : 'border-transparent text-[#a39e93] hover:text-[#ece8e1]'
+                  : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {item.icon} {item.label}
@@ -179,69 +182,49 @@ export const App: React.FC = () => {
             {/* 核心指标展台 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
               <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[#a39e93] font-medium tracking-tight mb-1">{tr('mTransfers')}</div>
-                <div className="font-mono-num text-2xl font-bold text-slate-100">
+                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mTransfers')}</div>
+                <div className="font-mono-num text-2xl font-bold text-[var(--text-primary)]">
                   {state?.counts.transfers.toLocaleString() || '0'}
                 </div>
-                <div className="text-[10px] text-[#6e695e] mt-1">{tr('mTransfersSub')} {state?.counts.transfers24h || 0} {tr('mTransfersUnit')}</div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-1">{tr('mTransfersSub')} {state?.counts.transfers24h || 0} {tr('mTransfersUnit')}</div>
               </div>
 
               <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[#a39e93] font-medium tracking-tight mb-1">{tr('mWallets')}</div>
-                <div className="font-mono-num text-2xl font-bold text-slate-100">
+                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mWallets')}</div>
+                <div className="font-mono-num text-2xl font-bold text-[var(--text-primary)]">
                   {state?.counts.wallets.toLocaleString() || '0'}
                 </div>
                 <div className="text-[10px] text-[#45c4b0] mt-1">{tr('mWalletsSub')}: {state?.counts.walletsA || 0} {tr('mWalletsUnit')}</div>
               </div>
 
               <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[#a39e93] font-medium tracking-tight mb-1">{tr('mOpps')}</div>
+                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mOpps')}</div>
                 <div className="font-mono-num text-2xl font-bold text-[#f5c042]">
                   {state?.counts.opportunities || '0'}
                 </div>
-                <div className="text-[10px] text-[#6e695e] mt-1">{tr('mOppsSub')}</div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-1">{tr('mOppsSub')}</div>
               </div>
 
               <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[#a39e93] font-medium tracking-tight mb-1">{tr('mDecisions')}</div>
+                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mDecisions')}</div>
                 <div className="font-mono-num text-2xl font-bold text-[#45c4b0]">
                   {state?.counts.decisions || '0'}
                 </div>
-                <div className="text-[10px] text-[#6e695e] mt-1">{tr('mDecisionsSub')}</div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-1">{tr('mDecisionsSub')}</div>
               </div>
             </div>
 
-            {/* 核心套利机会 */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <TrendingUp size={15} className="text-[#f5c042]" />
-                  {tr('realtimeOpps')}
-                </h2>
-                <div className="flex items-center gap-2 text-xs text-[#a39e93]">
-                  <span className="flex items-center gap-1"><ShieldCheck size={12} className="text-[#f5c042]" /> {tr('officialAnchor')}</span>
-                  <span className="text-[#6e695e]">·</span>
-                  <span className="flex items-center gap-1"><CheckCircle size={12} className="text-[#45c4b0]" /> {tr('adjudicationNote')}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {state?.opportunities && state.opportunities.length > 0 ? (
-                  state.opportunities.slice(0, 9).map((opp) => (
-                    <OpportunityCard key={`${opp.symbol}-${opp.buyChain}-${opp.sellChain}`} opp={opp} />
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 text-center text-xs text-[#a39e93] terminal-panel">
-                    {tr('noOpps')}
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* 跨链套利交易执行矩阵 DataMatrix */}
+            <ArbitrageMatrix
+              opportunities={state?.opportunities || []}
+              onSelectOpp={(opp) => setSelectedOpp(opp)}
+              sseConnected={sseConnected}
+            />
 
             {/* 高分聪明钱包 */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <h2 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                   <Activity size={15} className="text-[#45c4b0]" />
                   {tr('topWallets')}
                 </h2>
@@ -261,13 +244,13 @@ export const App: React.FC = () => {
                     className="terminal-panel p-3.5 cursor-pointer transition flex items-center justify-between group"
                   >
                     <div>
-                      <div className="font-mono text-xs font-semibold text-slate-200 group-hover:text-[#f5c042] transition">
+                      <div className="font-mono text-xs font-semibold text-[var(--text-primary)] group-hover:text-[#f5c042] transition">
                         {w.address.slice(0, 6)}...{w.address.slice(-4)}
                       </div>
-                      <div className="text-[11px] text-[#a39e93] mt-1 flex items-center gap-2">
+                      <div className="text-[11px] text-[var(--text-secondary)] mt-1 flex items-center gap-2">
                         <span className="text-[#45c4b0] font-mono-num font-medium">{tr('cyclesCount')} {w.capitalCycles}</span>
-                        <span className="text-[#6e695e]">·</span>
-                        <span className="text-[#a39e93] font-mono-num">{w.bridgeCount} {tr('bridgesCount')}</span>
+                        <span className="text-[var(--text-muted)]">·</span>
+                        <span className="text-[var(--text-secondary)] font-mono-num">{w.bridgeCount} {tr('bridgesCount')}</span>
                       </div>
                     </div>
                     <div className="text-right">
@@ -291,6 +274,13 @@ export const App: React.FC = () => {
 
       {/* 钱包侧边抽屉 */}
       <WalletDrawer wallet={selectedWallet} onClose={() => setSelectedWallet(null)} />
+
+      {/* 决策与操盘记录弹窗 */}
+      <DecisionModal
+        item={selectedOpp}
+        onClose={() => setSelectedOpp(null)}
+        onSaved={fetchState}
+      />
 
       {/* 数据源与代理设置弹窗 */}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />

@@ -92,29 +92,29 @@ export const DecisionLedger: React.FC = () => {
             <DollarSign size={20} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
               {tr('decTitle')}
               <span className="text-[10px] font-mono text-[#f5c042] bg-[#f5c042]/10 px-2 py-0.5 rounded border border-[#f5c042]/20">
                 {tr('decSubBadge')}
               </span>
             </h3>
-            <p className="text-xs text-[#a39e93] mt-0.5">{tr('decDesc')}</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">{tr('decDesc')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <div className="text-[11px] text-[#a39e93] mb-0.5">{tr('decPnlLabel')}</div>
+            <div className="text-[11px] text-[var(--text-secondary)] mb-0.5">{tr('decPnlLabel')}</div>
             <div className={`font-mono-num text-2xl font-extrabold ${pnl >= 0 ? 'text-[#45c4b0]' : 'text-[#e65138]'}`}>
               {pnl >= 0 ? '+' : ''}{usd(pnl)}
             </div>
           </div>
 
-          <div className="border-l border-white/[0.08] pl-4">
+          <div className="border-l border-[var(--border-subtle)] pl-4">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-[#070604] border border-white/[0.12] rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#f5c042] transition"
+              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042] transition"
             >
               <option value="all">{tr('decFilterAll')}</option>
               <option value="watching">{tr('decFilterWatching')}</option>
@@ -127,9 +127,9 @@ export const DecisionLedger: React.FC = () => {
       </div>
 
       {/* 决策记录表格 */}
-      <div className="terminal-panel rounded-lg overflow-hidden border border-white/[0.08]">
-        <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-[#070604]/80 text-[#a39e93] font-medium tracking-tight text-[11px] border-b border-white/[0.08]">
+      <div className="terminal-panel rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+        <table className="w-full text-left text-xs text-[var(--text-primary)]">
+          <thead className="bg-[var(--bg-elevated)]/60 text-[var(--text-secondary)] font-medium tracking-tight text-[11px] border-b border-[var(--border-subtle)]">
             <tr>
               <th className="py-2.5 px-3 w-8"></th>
               <th className="py-2.5 px-3">{tr('decThSymbol')}</th>
@@ -142,7 +142,7 @@ export const DecisionLedger: React.FC = () => {
               <th className="py-2.5 px-3 text-center">操作</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.06] font-mono-num">
+          <tbody className="divide-y divide-[var(--border-subtle)] font-mono-num">
             {items.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-14 text-[#a39e93] font-sans">
@@ -161,14 +161,14 @@ export const DecisionLedger: React.FC = () => {
                   <React.Fragment key={rowKey}>
                     <tr
                       onClick={() => toggleExpand(rowKey)}
-                      className="hover:bg-white/[0.04] transition duration-150 cursor-pointer group select-none"
+                      className="hover:bg-[var(--bg-elevated)]/40 transition duration-150 cursor-pointer group select-none"
                     >
                       {/* 展开/收起箭头 */}
-                      <td className="py-2.5 px-3 text-center text-[#6e695e] group-hover:text-[#f5c042] transition">
+                      <td className="py-2.5 px-3 text-center text-[var(--text-muted)] group-hover:text-[#f5c042] transition">
                         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
 
-                      <td className="py-2.5 px-3 font-bold text-slate-100 font-sans">
+                      <td className="py-2.5 px-3 font-bold text-[var(--text-primary)] font-sans">
                         <div className="flex items-center gap-1.5">
                           <span>{item.symbol}</span>
                           {journal.length > 0 && (
@@ -181,9 +181,9 @@ export const DecisionLedger: React.FC = () => {
 
                       <td className="py-2.5 px-3 font-sans">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-300">{item.buyChainName}</span>
-                          <ArrowRight size={11} className="text-[#6e695e]" />
-                          <span className="text-slate-300">{item.sellChainName}</span>
+                          <span className="text-[var(--text-secondary)]">{item.buyChainName}</span>
+                          <ArrowRight size={11} className="text-[var(--text-muted)]" />
+                          <span className="text-[var(--text-secondary)]">{item.sellChainName}</span>
                         </div>
                       </td>
 
@@ -199,7 +199,7 @@ export const DecisionLedger: React.FC = () => {
                         <select
                           value={item.decision?.status || 'todo'}
                           onChange={(e) => updateStatus(item, e.target.value)}
-                          className="bg-[#070604] border border-white/[0.12] rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-[#f5c042]"
+                          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded px-2 py-1 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042]"
                         >
                           <option value="todo">{tr('decOptTodo')}</option>
                           <option value="watching">{tr('decOptWatching')}</option>
@@ -209,23 +209,23 @@ export const DecisionLedger: React.FC = () => {
                         </select>
                       </td>
 
-                      <td className="py-2.5 px-3 text-right font-bold text-slate-200">
+                      <td className="py-2.5 px-3 text-right font-bold text-[var(--text-primary)]">
                         {item.decision?.realizedPnlUsd != null && item.decision.realizedPnlUsd !== 0 ? (
                           <span className={item.decision.realizedPnlUsd > 0 ? 'text-[#45c4b0]' : 'text-[#e65138]'}>
                             {item.decision.realizedPnlUsd > 0 ? '+' : ''}{usd(item.decision.realizedPnlUsd)}
                           </span>
                         ) : (
-                          <span className="text-[#6e695e]">—</span>
+                          <span className="text-[var(--text-muted)]">—</span>
                         )}
                       </td>
 
-                      <td className="py-2.5 px-3 font-sans max-w-xs truncate text-[11px] text-[#a39e93]">
+                      <td className="py-2.5 px-3 font-sans max-w-xs truncate text-[11px] text-[var(--text-secondary)]">
                         {latestLog ? (
-                          <span title={latestLog.text} className="text-slate-200 truncate block">
+                          <span title={latestLog.text} className="text-[var(--text-primary)] truncate block">
                             {latestLog.text}
                           </span>
                         ) : (
-                          <span className="text-[#6e695e]">暂无操作日志 (点击展开)</span>
+                          <span className="text-[var(--text-muted)]">暂无操作日志 (点击展开)</span>
                         )}
                       </td>
 
@@ -241,7 +241,7 @@ export const DecisionLedger: React.FC = () => {
                           </button>
                           <button
                             onClick={() => clearDecision(item)}
-                            className="p-1 rounded hover:bg-white/[0.08] text-[#6e695e] hover:text-[#e65138] transition cursor-pointer"
+                            className="p-1 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[#e65138] transition cursor-pointer"
                             title="清空记录"
                           >
                             <Trash2 size={12} />
@@ -252,14 +252,14 @@ export const DecisionLedger: React.FC = () => {
 
                     {/* 点击整行展开的详情抽屉面板 */}
                     {isExpanded && (
-                      <tr className="bg-[#0c121e]/40 dark:bg-black/20">
-                        <td colSpan={9} className="p-4 border-t border-b border-white/[0.04]">
+                      <tr className="bg-[var(--bg-elevated)]/30">
+                        <td colSpan={9} className="p-4 border-t border-b border-[var(--border-subtle)]">
                           <div className="max-w-4xl space-y-3 font-sans">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-bold text-xs text-slate-100 flex items-center gap-2">
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] flex items-center gap-2">
                                 <History size={14} className="text-[#f5c042]" />
                                 <span>{item.symbol} 完整操盘日志与盈亏记录</span>
-                                <span className="text-[10px] text-[#a39e93] font-normal">
+                                <span className="text-[10px] text-[var(--text-secondary)] font-normal">
                                   （共 {journal.length} 笔记录 · 累计盈亏: {usd(item.decision?.realizedPnlUsd || 0)}）
                                 </span>
                               </h4>
@@ -273,7 +273,7 @@ export const DecisionLedger: React.FC = () => {
                             </div>
 
                             {journal.length === 0 ? (
-                              <div className="py-6 text-center text-xs text-[#6e695e] bg-white/[0.02] rounded border border-white/[0.04]">
+                              <div className="py-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] rounded border border-[var(--border-subtle)]">
                                 暂无操作笔记。点击右侧「记一笔」或右上角按钮记录买入成本、跨链进度或真实盈亏！
                               </div>
                             ) : (
@@ -281,28 +281,28 @@ export const DecisionLedger: React.FC = () => {
                                 {journal.map((j, idx) => (
                                   <div
                                     key={idx}
-                                    className="p-3 bg-[#070604]/80 rounded border border-white/[0.06] text-xs space-y-1.5"
+                                    className="p-3 bg-[var(--bg-surface)] rounded border border-[var(--border-subtle)] text-xs space-y-1.5"
                                   >
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2 text-[#a39e93] text-[11px]">
-                                        <Calendar size={12} className="text-[#6e695e]" />
+                                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-[11px]">
+                                        <Calendar size={12} className="text-[var(--text-muted)]" />
                                         <span className="font-mono">{new Date(j.ts).toLocaleString()}</span>
                                         {j.status && (
-                                          <span className="px-1.5 py-0.2 rounded bg-white/[0.06] text-slate-300 text-[10px]">
+                                          <span className="px-1.5 py-0.2 rounded bg-[var(--bg-elevated)] text-[var(--text-primary)] text-[10px]">
                                             推进至: {j.status}
                                           </span>
                                         )}
                                       </div>
                                       {j.pnlDeltaUsd != null && (
                                         <div className="font-mono-num font-bold">
-                                          <span className="text-[#a39e93] mr-1 text-[11px]">盈亏变动:</span>
+                                          <span className="text-[var(--text-secondary)] mr-1 text-[11px]">盈亏变动:</span>
                                           <span className={j.pnlDeltaUsd >= 0 ? 'text-[#45c4b0]' : 'text-[#e65138]'}>
                                             {j.pnlDeltaUsd >= 0 ? '+' : ''}{usd(j.pnlDeltaUsd)}
                                           </span>
                                         </div>
                                       )}
                                     </div>
-                                    <div className="text-slate-100 whitespace-pre-wrap leading-relaxed">
+                                    <div className="text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">
                                       {j.text}
                                     </div>
                                   </div>

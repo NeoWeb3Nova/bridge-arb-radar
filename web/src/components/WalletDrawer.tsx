@@ -22,8 +22,8 @@ export const WalletDrawer: React.FC<Props> = ({ wallet, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col">
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-[var(--bg-surface)] border-l border-[var(--border-subtle)] shadow-2xl z-50 flex flex-col">
+      <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`px-2 py-0.5 rounded text-xs font-bold ${
             wallet.grade === 'A' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
@@ -32,10 +32,10 @@ export const WalletDrawer: React.FC<Props> = ({ wallet, onClose }) => {
           }`}>
             {wallet.grade} {tr('dwGrade')}
           </span>
-          <span className="font-mono text-sm text-slate-200">{short(wallet.address, 8)}</span>
+          <span className="font-mono text-sm text-[var(--text-primary)]">{short(wallet.address, 8)}</span>
           <button
             onClick={handleCopy}
-            className="text-slate-500 hover:text-slate-300 transition"
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
             title={tr('dwCopyBtn')}
           >
             {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
@@ -43,7 +43,7 @@ export const WalletDrawer: React.FC<Props> = ({ wallet, onClose }) => {
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition"
         >
           <X size={18} />
         </button>
@@ -51,45 +51,45 @@ export const WalletDrawer: React.FC<Props> = ({ wallet, onClose }) => {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
-            <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--bg-elevated)]/50 p-3 rounded-lg border border-[var(--border-subtle)]">
+            <div className="text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
               <Award size={13} /> {tr('dwScoreTitle')}
             </div>
-            <div className="font-mono-num text-xl font-bold text-slate-100">{wallet.score}</div>
+            <div className="font-mono-num text-xl font-bold text-[var(--text-primary)]">{wallet.score}</div>
           </div>
-          <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
-            <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--bg-elevated)]/50 p-3 rounded-lg border border-[var(--border-subtle)]">
+            <div className="text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
               <RefreshCw size={13} /> {tr('dwCyclesTitle')}
             </div>
             <div className="font-mono-num text-xl font-bold text-emerald-400">{wallet.capitalCycles} {tr('dwTimesUnit')}</div>
           </div>
         </div>
 
-        <div className="bg-slate-950/40 p-3.5 rounded-lg border border-slate-800/60 space-y-2 text-xs">
+        <div className="bg-[var(--bg-elevated)]/50 p-3.5 rounded-lg border border-[var(--border-subtle)] space-y-2 text-xs">
           <div className="flex justify-between">
-            <span className="text-slate-500">{tr('dwBridgeTimes')}</span>
-            <span className="font-mono-num text-slate-200">{wallet.bridgeCount} {tr('dwTimesUnit')}</span>
+            <span className="text-[var(--text-secondary)]">{tr('dwBridgeTimes')}</span>
+            <span className="font-mono-num text-[var(--text-primary)]">{wallet.bridgeCount} {tr('dwTimesUnit')}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">{tr('dwMaxUsd')}</span>
-            <span className="font-mono-num text-slate-200">{usd(wallet.maxUsd)}</span>
+            <span className="text-[var(--text-secondary)]">{tr('dwMaxUsd')}</span>
+            <span className="font-mono-num text-[var(--text-primary)]">{usd(wallet.maxUsd)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">{tr('dwLastSeen')}</span>
-            <span className="text-slate-200">{ago(wallet.lastSeen)}</span>
+            <span className="text-[var(--text-secondary)]">{tr('dwLastSeen')}</span>
+            <span className="text-[var(--text-primary)]">{ago(wallet.lastSeen)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">{tr('dwRoundtrips')}</span>
-            <span className="font-mono-num text-slate-200">{wallet.roundtrips} {tr('dwTimesUnit')}</span>
+            <span className="text-[var(--text-secondary)]">{tr('dwRoundtrips')}</span>
+            <span className="font-mono-num text-[var(--text-primary)]">{wallet.roundtrips} {tr('dwTimesUnit')}</span>
           </div>
         </div>
 
         {wallet.autoTags && wallet.autoTags.length > 0 && (
           <div>
-            <div className="text-xs text-slate-500 font-medium mb-2">{tr('dwBehaviors')}</div>
+            <div className="text-xs text-[var(--text-secondary)] font-medium mb-2">{tr('dwBehaviors')}</div>
             <div className="flex flex-wrap gap-1.5">
               {wallet.autoTags.map((tag, i) => (
-                <span key={i} className="px-2 py-0.5 rounded text-xs bg-slate-800/80 text-slate-300 border border-slate-700/50">
+                <span key={i} className="px-2 py-0.5 rounded text-xs bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)]">
                   {tag}
                 </span>
               ))}

@@ -37,30 +37,30 @@ export const SpreadChecker: React.FC = () => {
       {/* 搜索器 */}
       <div className="terminal-panel p-4 rounded-lg space-y-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
             {tr('spTitle')}
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
             {tr('spDesc')}
           </p>
         </div>
 
         <div className="flex items-center gap-2 max-w-md">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder={tr('spInputPh')}
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full bg-slate-950/80 dark:bg-slate-950/80 border border-slate-800 rounded-md pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 uppercase font-mono font-bold focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md pl-9 pr-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] uppercase font-mono font-bold focus:outline-none focus:border-[#f5c042]"
             />
           </div>
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer"
+            className="impeccable-btn-primary px-4 py-2 text-xs cursor-pointer disabled:opacity-50"
           >
             {loading ? tr('spCheckingBtn') : tr('spCheckBtn')}
           </button>
@@ -71,40 +71,40 @@ export const SpreadChecker: React.FC = () => {
       {result && (
         <div className="space-y-4">
           {result.best ? (
-            <div className="terminal-panel p-4 rounded-lg border-l-4 border-l-emerald-500">
+            <div className="terminal-panel p-4 rounded-lg border-l-4 border-l-[#45c4b0]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-base text-slate-100">{result.best.symbol}</span>
+                    <span className="font-extrabold text-base text-[var(--text-primary)]">{result.best.symbol}</span>
                     <VerdictBadge verdict={result.best.verdict as AdjudicationVerdict} />
                   </div>
-                  <div className="text-xs text-slate-300 flex items-center gap-2">
+                  <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
                     <span>{tr('spBuyAt')} <b className="text-blue-500 dark:text-blue-400">{result.best.buyChainName}</b> {tr('spBuyAction')} ({usd(result.best.buyPrice)})</span>
-                    <ArrowRight size={13} className="text-slate-500" />
-                    <span>{tr('spSellAt')} <b className="text-emerald-500 dark:text-emerald-400">{result.best.sellChainName}</b> {tr('spSellAction')} ({usd(result.best.sellPrice)})</span>
+                    <ArrowRight size={13} className="text-[var(--text-muted)]" />
+                    <span>{tr('spSellAt')} <b className="text-[#45c4b0]">{result.best.sellChainName}</b> {tr('spSellAction')} ({usd(result.best.sellPrice)})</span>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <div className="font-mono-num text-2xl font-extrabold text-emerald-500 dark:text-emerald-400">
+                  <div className="font-mono-num text-2xl font-extrabold text-[#45c4b0]">
                     +{result.best.spreadPct.toFixed(2)}%
                   </div>
-                  <div className="text-[11px] text-slate-400 font-mono-num">
+                  <div className="text-[11px] text-[var(--text-muted)] font-mono-num">
                     {tr('spLiquidity')} {usd(result.best.minLiquidityUsd)}
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="terminal-panel p-4 rounded-lg text-center text-xs text-slate-400">
+            <div className="terminal-panel p-4 rounded-lg text-center text-xs text-[var(--text-muted)]">
               {tr('spNoSpread')}
             </div>
           )}
 
           {/* 全部报价明细表 */}
-          <div className="terminal-panel rounded-lg overflow-hidden">
-            <table className="w-full text-left text-xs text-slate-300 font-mono-num">
-              <thead className="bg-slate-950/80 text-slate-400 font-medium tracking-tight text-[11px] border-b border-slate-800 font-sans">
+          <div className="terminal-panel rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+            <table className="w-full text-left text-xs text-[var(--text-primary)] font-mono-num">
+              <thead className="bg-[var(--bg-elevated)]/60 text-[var(--text-secondary)] font-medium tracking-tight text-[11px] border-b border-[var(--border-subtle)] font-sans">
                 <tr>
                   <th className="py-2.5 px-3">{tr('spThChain')}</th>
                   <th className="py-2.5 px-3">{tr('spThDex')}</th>
@@ -116,19 +116,19 @@ export const SpreadChecker: React.FC = () => {
                   <th className="py-2.5 px-3 text-center">{tr('spThLink')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {(result.quotes || []).map((q: any, i: number) => (
-                  <tr key={i} className="hover:bg-slate-800/40 transition duration-150">
-                    <td className="py-2 px-3 font-sans font-medium text-slate-200">{q.chain}</td>
-                    <td className="py-2 px-3 font-sans text-slate-400">{q.dex || 'DEX'}</td>
-                    <td className="py-2 px-3 font-mono text-[11px] text-slate-400">
+                  <tr key={i} className="hover:bg-[var(--bg-elevated)]/40 transition duration-150">
+                    <td className="py-2 px-3 font-sans font-medium text-[var(--text-primary)]">{q.chain}</td>
+                    <td className="py-2 px-3 font-sans text-[var(--text-muted)]">{q.dex || 'DEX'}</td>
+                    <td className="py-2 px-3 font-mono text-[11px] text-[var(--text-muted)]">
                       {q.tokenAddress ? (
                         <span title={q.tokenAddress}>{q.tokenAddress.slice(0, 6)}...{q.tokenAddress.slice(-4)}</span>
                       ) : '—'}
                     </td>
-                    <td className="py-2 px-3 text-right font-bold text-slate-100">{usd(q.priceUsd)}</td>
-                    <td className="py-2 px-3 text-right text-slate-300">{usd(q.liquidityUsd)}</td>
-                    <td className="py-2 px-3 text-right text-slate-400 font-bold">{usd(q.volume24h)}</td>
+                    <td className="py-2 px-3 text-right font-bold text-[var(--text-primary)]">{usd(q.priceUsd)}</td>
+                    <td className="py-2 px-3 text-right text-[var(--text-secondary)]">{usd(q.liquidityUsd)}</td>
+                    <td className="py-2 px-3 text-right text-[var(--text-muted)] font-bold">{usd(q.volume24h)}</td>
                     <td className="py-2 px-3 text-center font-sans">
                       <VerdictBadge verdict={q.verdict} size="xs" />
                     </td>
@@ -139,7 +139,7 @@ export const SpreadChecker: React.FC = () => {
                             href={q.pairUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1 text-slate-500 hover:text-blue-400 inline-flex transition"
+                            className="p-1 text-[var(--text-muted)] hover:text-blue-400 inline-flex transition"
                             title="打开 DEX 池子 (DexScreener)"
                           >
                             <ExternalLink size={12} />
@@ -150,7 +150,7 @@ export const SpreadChecker: React.FC = () => {
                             href={q.explorerUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1 text-slate-500 hover:text-emerald-400 inline-flex transition"
+                            className="p-1 text-[var(--text-muted)] hover:text-[#45c4b0] inline-flex transition"
                             title="打开区块链浏览器"
                           >
                             <ExternalLink size={12} className="rotate-45" />

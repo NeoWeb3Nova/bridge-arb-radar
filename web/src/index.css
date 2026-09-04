@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
-  :root {
+  :root, html.dark {
+    color-scheme: dark;
     /* Impeccable Signature Palette: Kinpaku Gold (金箔) & Deep Lacquer (漆黑) */
     --ks-kinpaku: #f5c042;
     --ks-kinpaku-vivid: #ffd24d;
@@ -25,14 +28,14 @@
     --ks-rule: rgba(236, 232, 225, 0.12);
     --ks-edge: rgba(236, 232, 225, 0.28);
 
-    --bg-base: var(--ks-lacquer-deep);
-    --bg-surface: var(--ks-lacquer-raised);
-    --bg-elevated: var(--ks-graphite);
-    --border-subtle: var(--ks-rule);
-    --border-card: var(--ks-rule);
-    --text-primary: var(--ks-text);
-    --text-secondary: var(--ks-text-muted);
-    --text-muted: var(--ks-text-faint);
+    --bg-base: #070604;
+    --bg-surface: #161410;
+    --bg-elevated: #211e19;
+    --border-subtle: rgba(236, 232, 225, 0.12);
+    --border-card: rgba(236, 232, 225, 0.12);
+    --text-primary: #ece8e1;
+    --text-secondary: #a39e93;
+    --text-muted: #6e695e;
   }
 
   html.light {
@@ -53,14 +56,14 @@
     --ks-kinpaku: #b8860b;
     --ks-patina: #0d7a6b;
 
-    --bg-base: var(--ks-lacquer-deep);
-    --bg-surface: var(--ks-lacquer-raised);
-    --bg-elevated: var(--ks-graphite);
-    --border-subtle: var(--ks-rule);
-    --border-card: var(--ks-rule);
-    --text-primary: var(--ks-text);
-    --text-secondary: var(--ks-text-muted);
-    --text-muted: var(--ks-text-faint);
+    --bg-base: #f0ebe1;
+    --bg-surface: #ffffff;
+    --bg-elevated: #e6e0d3;
+    --border-subtle: rgba(31, 29, 25, 0.1);
+    --border-card: rgba(31, 29, 25, 0.1);
+    --text-primary: #1f1d19;
+    --text-secondary: #5c564b;
+    --text-muted: #8a8273;
   }
 
   body {
@@ -150,57 +153,163 @@ html.light .terminal-panel {
   transform: translateY(0);
 }
 
-/* Color overrides for smooth adaptation */
-html.light .text-slate-100 {
+/* Form controls light mode adaptability */
+html.light select,
+html.light input,
+html.light textarea {
+  color-scheme: light;
+}
+
+/* Color overrides for smooth adaptation in light mode */
+html.light .text-slate-100,
+html.light .text-slate-200 {
   color: #1f1d19 !important;
 }
-html.light .text-slate-200 {
-  color: #2b2721 !important;
-}
-html.light .text-slate-300 {
-  color: #454035 !important;
-}
+html.light .text-slate-300,
 html.light .text-slate-400 {
-  color: #6e695e !important;
+  color: #5c564b !important;
 }
-html.light .text-slate-500 {
+html.light .text-slate-500,
+html.light .text-slate-600 {
   color: #8a8273 !important;
 }
 
-html.light .bg-slate-900\/60,
-html.light .bg-slate-900\/40,
+html.light .bg-slate-900,
 html.light .bg-slate-900\/80,
-html.light .bg-slate-900 {
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/40 {
   background-color: #ffffff !important;
 }
-html.light .bg-slate-950\/60,
-html.light .bg-slate-950\/70,
+
+html.light .bg-slate-950,
 html.light .bg-slate-950\/80,
-html.light .bg-slate-950 {
+html.light .bg-slate-950\/70,
+html.light .bg-slate-950\/60,
+html.light .bg-slate-950\/40 {
   background-color: #f7f4ef !important;
 }
+
 html.light .border-slate-800,
 html.light .border-slate-800\/80,
 html.light .border-slate-800\/60,
+html.light .border-slate-800\/50,
 html.light .border-slate-800\/40,
+html.light .border-slate-700,
+html.light .border-slate-700\/80,
+html.light .border-slate-700\/50,
+html.light .border-slate-700\/30,
 html.light .divide-slate-800\/60,
 html.light .divide-slate-800\/50 {
   border-color: rgba(31, 29, 25, 0.1) !important;
 }
+
+/* Hardcoded dark hex color overrides */
+html.light .bg-\[\#070604\],
+html.light .bg-\[\#070604\]\/80,
+html.light .bg-\[\#070604\]\/60,
 html.light .bg-\[\#090d14\] {
   background-color: #f0ebe1 !important;
 }
-html.light .bg-\[\#0c121e\]\/90 {
-  background-color: rgba(247, 244, 239, 0.92) !important;
+
+html.light .bg-\[\#0d0c0a\],
+html.light .bg-\[\#0d0c0a\]\/90,
+html.light .bg-\[\#0c121e\]\/90,
+html.light .bg-\[\#0c121e\]\/40 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
 }
+
+html.light .border-white\/\[0\.08\],
+html.light .border-white\/\[0\.06\],
+html.light .border-white\/\[0\.12\],
+html.light .border-white\/\[0\.04\],
+html.light .divide-white\/\[0\.06\] {
+  border-color: rgba(31, 29, 25, 0.1) !important;
+}
+
 html.light .bg-slate-800,
 html.light .bg-slate-800\/80,
-html.light .bg-slate-800\/70 {
+html.light .bg-slate-800\/70,
+html.light .bg-slate-800\/60,
+html.light .bg-white\/\[0\.04\],
+html.light .bg-white\/\[0\.02\],
+html.light .bg-white\/\[0\.06\] {
   background-color: #e6e0d3 !important;
   color: #1f1d19 !important;
 }
+
 html.light .hover\:bg-slate-800\/40:hover,
 html.light .hover\:bg-slate-800\/30:hover,
-html.light .hover\:bg-slate-800\/60:hover {
+html.light .hover\:bg-slate-800\/60:hover,
+html.light .hover\:bg-slate-700:hover,
+html.light .hover\:bg-white\/\[0\.04\]:hover,
+html.light .hover\:bg-white\/\[0\.06\]:hover,
+html.light .hover\:bg-white\/\[0\.08\]:hover {
   background-color: #ebe5d8 !important;
 }
+
+html.light .hover\:text-\[\#ece8e1\]:hover {
+  color: #1f1d19 !important;
+}
+
+/* Financial Terminal Flash Animations */
+@keyframes flash-green {
+  0% {
+    background-color: rgba(69, 196, 176, 0.35);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-red {
+  0% {
+    background-color: rgba(230, 81, 56, 0.35);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.flash-up {
+  animation: flash-green 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.flash-down {
+  animation: flash-red 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html.light .flash-up {
+  animation: flash-green-light 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html.light .flash-down {
+  animation: flash-red-light 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes flash-green-light {
+  0% {
+    background-color: rgba(13, 122, 107, 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-red-light {
+  0% {
+    background-color: rgba(230, 81, 56, 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
