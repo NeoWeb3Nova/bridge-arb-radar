@@ -184,6 +184,34 @@ export interface PipelineState {
   };
 }
 
+export interface WebNotificationConfig {
+  enabled: boolean;
+  sound: boolean;
+}
+
+export interface TelegramNotificationConfig {
+  enabled: boolean;
+  botToken: string;
+  chatId: string;
+}
+
+export interface NotificationSettings {
+  web: WebNotificationConfig;
+  telegram: TelegramNotificationConfig;
+  minSpreadPct: number;
+}
+
+export interface AppSettings {
+  proxyUrl?: string;
+  useProxy?: boolean;
+  keys?: Record<string, string>;
+  hasKeys?: Record<string, boolean>;
+  sources?: Record<string, { enabled?: boolean }>;
+  scan?: { intervalMin?: number; autoScan?: boolean; minSpreadPct?: number };
+  endpoints?: Record<string, string>;
+  notifications?: NotificationSettings;
+}
+
 export interface AppState {
   chains: ChainInfo[];
   counts: {
@@ -200,4 +228,5 @@ export interface AppState {
   lastScanAt: string | null;
   opportunities: OpportunityItem[];
   topWallets: WalletItem[];
+  settings?: AppSettings;
 }

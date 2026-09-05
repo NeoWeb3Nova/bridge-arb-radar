@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AppState, WalletItem, OpportunityItem } from './types';
 import { OpportunityCard } from './components/OpportunityCard';
 import { ArbitrageMatrix } from './components/ArbitrageMatrix';
@@ -14,11 +14,12 @@ import {
   Radar, Play, Radio, Layers, 
   TrendingUp, BookOpen, Activity, Settings, 
   Coins, WalletCards, ArrowLeftRight, Clock, ShieldCheck, CheckCircle,
-  Sun, Moon, Languages, Sparkles
+  Sun, Moon, Languages, Sparkles, X
 } from 'lucide-react';
 import { ago } from './utils/format';
 import { useTheme } from './context/ThemeContext';
 import { useI18n } from './context/I18nContext';
+import { playOpportunitySound, sendDesktopNotification } from './utils/notification';
 
 export const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -31,6 +32,20 @@ export const App: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const [sseConnected, setSseConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [alertOpportunity, setAlertOpportunity] = useState<OpportunityItem | null>(null);
+
+  const settingsRef = useRef(state?.settings);
+  useEffect(() => {
+    settingsRef.current = state?.settings;
+  }, [state?.settings]);
+
+  useEffect(() => {
+    if (!alertOpportunity) return;
+    const timer = setTimeout(() => {
+      setAlertOpportunity(null);
+    }, 12000);
+    return () => clearTimeout(timer);
+  }, [alertOpportunity]);
 
   const fetchState = async () => {
     try {
@@ -54,7 +69,47 @@ export const App: React.FC = () => {
       setScanning(false);
       fetchState();
     });
-    es.addEventListener('opportunities', () => fetchState());
+    es.addEventListener('opportunities', (ev: MessageEvent) => {
+      fetchState();
+      try {
+        const payload = JSON.parse(ev.data);
+        const items = (payload?.items || []) as OpportunityItem[];
+        if (items.length > 0) {
+          const notifs = settingsRef.current?.notifications;
+          const minSpread = Number(notifs?.minSpreadPct ?? 1.0);
+          const valid = items.filter((o) => {
+            if (!o) return false;
+            if (o.verdict === 'fake' || o.isSymbolCollision || (o as any).collisionRisk) return false;
+            return (Number(o.spreadPct) || 0) >= minSpread;
+          });
+
+          if (valid.length > 0) {
+            const best = valid[0];
+            const webConfig = notifs?.web;
+            const isWebEnabled = webConfig ? webConfig.enabled !== false : true;
+            const isSoundEnabled = webConfig ? webConfig.sound !== false : true;
+
+            if (isWebEnabled) {
+              if (isSoundEnabled) {
+                playOpportunitySound();
+              }
+              const title = `🎯 发现跨链套利机会: ${best.symbol} (+${(Number(best.spreadPct) || 0).toFixed(2)}%)`;
+              const body = `买入: ${best.buyChainName || best.buyChain} → 卖出: ${best.sellChainName || best.sellChain} | 评级: ${best.qualityGrade || 'A'}级`;
+              sendDesktopNotification(title, {
+                body,
+                onClick: () => {
+                  setTab('dash');
+                  setMatrixFilterSymbol(best.symbol);
+                },
+              });
+              setAlertOpportunity(best);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error handling opportunities event:', err);
+      }
+    });
     es.onerror = () => setSseConnected(false);
 
     return () => es.close();
@@ -133,10 +188,13 @@ export const App: React.FC = () => {
             {/* 设置按钮 */}
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+              className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer relative"
               title={tr('settingsTitle')}
             >
               <Settings size={15} />
+              {(state?.settings?.notifications?.web?.enabled || state?.settings?.notifications?.telegram?.enabled) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1 shadow-sm shadow-emerald-400" />
+              )}
             </button>
 
             {/* 金箔主操作按钮 */}
@@ -321,6 +379,55 @@ export const App: React.FC = () => {
 
       {/* 数据源与代理设置弹窗 */}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {/* 实时套利机会浮层告警 */}
+      {alertOpportunity && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-sm w-full bg-[var(--bg-surface)] border border-[#f5c042]/50 rounded-xl shadow-2xl p-4 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold text-xs text-[#f5c042] uppercase tracking-wider">
+                🎯 捕获跨链套利机会
+              </span>
+            </div>
+            <button
+              onClick={() => setAlertOpportunity(null)}
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer p-0.5"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="font-mono font-bold text-base text-[var(--text-primary)]">
+              {alertOpportunity.symbol}
+            </span>
+            <span className="font-mono font-bold text-base text-emerald-400">
+              +{Number(alertOpportunity.spreadPct).toFixed(2)}%
+            </span>
+          </div>
+          <div className="text-[11px] text-[var(--text-secondary)] flex items-center justify-between">
+            <span>
+              {alertOpportunity.buyChainName || alertOpportunity.buyChain} →{' '}
+              {alertOpportunity.sellChainName || alertOpportunity.sellChain}
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-[#f5c042]/10 text-[#f5c042] border border-[#f5c042]/20 font-mono text-[10px] font-bold">
+              {alertOpportunity.qualityGrade || 'A'}级
+            </span>
+          </div>
+          <div className="pt-1 flex items-center justify-end gap-2">
+            <button
+              onClick={() => {
+                setTab('dash');
+                setMatrixFilterSymbol(alertOpportunity.symbol);
+                setAlertOpportunity(null);
+              }}
+              className="px-3 py-1 bg-[#f5c042] text-black font-semibold text-xs rounded hover:opacity-90 transition cursor-pointer"
+            >
+              前往机会矩阵查看
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
