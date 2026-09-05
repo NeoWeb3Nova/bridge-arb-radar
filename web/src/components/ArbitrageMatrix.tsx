@@ -912,7 +912,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       <div className="flex flex-wrap items-center gap-2 text-xs">
                                         <span className="flex items-center gap-1.5 font-bold text-emerald-400">
                                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                          ● 实时询价已打通 ({row.netCalc.route.bridgeName})
+                                          实时询价已打通 ({row.netCalc.route.bridgeName})
                                         </span>
                                         {liveData?.live && (
                                           <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)]">
