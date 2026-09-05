@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   X, Globe, Shield, Save, Check, Bell, Send, 
-  Volume2, AlertCircle, CheckCircle2, Sliders, ExternalLink, RefreshCw
+  Volume2, AlertCircle, CheckCircle2, Sliders, ExternalLink, RefreshCw, Clock
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 import { playOpportunitySound, requestNotificationPermission, sendDesktopNotification } from '../utils/notification';
@@ -13,7 +13,7 @@ interface Props {
 
 export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const { t: tr } = useI18n();
-  const [activeTab, setActiveTab] = useState<'notifications' | 'proxy'>('notifications');
+  const [activeTab, setActiveTab] = useState<'notifications' | 'scan' | 'proxy'>('notifications');
 
   // Proxy & Keys
   const [proxyUrl, setProxyUrl] = useState('');
@@ -29,6 +29,11 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [tgBotToken, setTgBotToken] = useState('');
   const [tgChatId, setTgChatId] = useState('');
   const [minSpreadPct, setMinSpreadPct] = useState('1.0');
+
+  // Scan & Schedule
+  const [scanAutoEnabled, setScanAutoEnabled] = useState(true);
+  const [scanIntervalMin, setScanIntervalMin] = useState('5');
+  const [scanLookbackHours, setScanLookbackHours] = useState('24');
 
   // Interactive feedback & Bot Info
   const [botInfo, setBotInfo] = useState<{ id?: number; username?: string; first_name?: string } | null>(null);
@@ -74,6 +79,12 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           setRangeKey(s.keys?.range || '');
           setLifiKey(s.keys?.lifi || '');
           setEtherscanKey(s.keys?.etherscan || '');
+
+          if (s.scan) {
+            setScanAutoEnabled(s.scan.autoEnabled !== false);
+            setScanIntervalMin(String(s.scan.intervalMin ?? 5));
+            setScanLookbackHours(String(s.scan.lookbackHours ?? 24));
+          }
 
           if (s.notifications) {
             setWebEnabled(s.notifications.web?.enabled !== false);
@@ -188,6 +199,9 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const handleSave = async () => {
     try {
       const parsedSpread = parseFloat(minSpreadPct);
+      const parsedInterval = parseInt(scanIntervalMin, 10);
+      const parsedLookback = parseInt(scanLookbackHours, 10);
+
       await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,6 +212,11 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             range: rangeKey,
             lifi: lifiKey,
             etherscan: etherscanKey,
+          },
+          scan: {
+            autoEnabled: scanAutoEnabled,
+            intervalMin: !isNaN(parsedInterval) && parsedInterval >= 1 ? parsedInterval : 5,
+            lookbackHours: !isNaN(parsedLookback) && parsedLookback >= 1 ? parsedLookback : 24,
           },
           notifications: {
             web: {
@@ -230,14 +249,14 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface)]">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded bg-[#f5c042]/10 border border-[#f5c042]/30 flex items-center justify-center text-[#f5c042]">
-              <Bell size={15} />
+              <Sliders size={15} />
             </div>
             <div>
               <h3 className="font-bold text-sm text-[var(--text-primary)]">
                 {tr('setModalTitle')}
               </h3>
               <p className="text-[11px] text-[var(--text-muted)]">
-                支持网页弹窗、提示音及 Telegram 机器人任意多通道推送
+                套利机会推送、后台自动扫描频率与网络代理配置
               </p>
             </div>
           </div>
@@ -261,9 +280,20 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           >
             <Bell size={14} />
             <span>{tr('setNotifTitle')}</span>
-            {(webEnabled || tgEnabled) && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse ml-0.5" />
-            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('scan')}
+            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
+              activeTab === 'scan'
+                ? 'border-[#f5c042] text-[#f5c042]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Clock size={14} />
+            <span>{tr('setScanTabTitle')}</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-[#f5c042] border border-[#f5c042]/30">
+              {scanAutoEnabled ? `${scanIntervalMin || 5}m` : '已暂停'}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('proxy')}
@@ -529,6 +559,130 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       <div>{tgTestResult.message}</div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'scan' && (
+            <div className="space-y-4">
+              {/* 自动扫描主开关 */}
+              <div className="bg-[var(--bg-surface)] p-3 rounded-lg border border-[var(--border-subtle)] flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+                    <Clock size={14} className="text-[#f5c042]" />
+                    <span>{tr('setScanAutoEnable')}</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    开启后雷达引擎将在后台周期性全自动轮巡各大主流跨链桥流水
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={scanAutoEnabled}
+                    onChange={(e) => setScanAutoEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer"
+                  />
+                  <span className={`text-[11px] px-2 py-0.5 rounded font-mono font-semibold ${
+                    scanAutoEnabled ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400'
+                  }`}>
+                    {scanAutoEnabled ? '运行中' : '已暂停'}
+                  </span>
+                </label>
+              </div>
+
+              {/* 扫描间隔设置 */}
+              <div className={`p-3 rounded-lg border transition space-y-3 ${
+                scanAutoEnabled ? 'bg-[var(--bg-surface)] border-[var(--border-subtle)]' : 'opacity-60 bg-[var(--bg-surface)]/50 border-[var(--border-subtle)]'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-[var(--text-primary)]">
+                    {tr('setScanIntervalTitle')}
+                  </label>
+                  <span className="text-[11px] text-[#f5c042] font-mono font-bold">
+                    每 {scanIntervalMin || '5'} 分钟扫描一次
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  {tr('setScanIntervalDesc')}
+                </p>
+
+                {/* 快捷预设按钮 */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[
+                    { val: '1', label: '1 分钟 (极速盯盘)' },
+                    { val: '3', label: '3 分钟 (积极捕获)' },
+                    { val: '5', label: '5 分钟 (默认推荐)' },
+                    { val: '10', label: '10 分钟 (稳健)' },
+                    { val: '15', label: '15 分钟 (轻载)' },
+                    { val: '30', label: '30 分钟 (省流)' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      disabled={!scanAutoEnabled}
+                      onClick={() => setScanIntervalMin(preset.val)}
+                      className={`px-2.5 py-1 rounded text-[11px] font-mono transition cursor-pointer ${
+                        String(scanIntervalMin) === preset.val
+                          ? 'bg-[#f5c042] text-black font-bold shadow-sm'
+                          : 'bg-[var(--bg-base)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 自定义分钟数输入 */}
+                <div className="pt-2 flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--text-secondary)]">自定义分钟数:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1440"
+                    disabled={!scanAutoEnabled}
+                    value={scanIntervalMin}
+                    onChange={(e) => setScanIntervalMin(e.target.value)}
+                    className="w-24 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded px-2.5 py-1 font-mono text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042] text-xs"
+                  />
+                  <span className="text-[11px] text-[var(--text-muted)]">分钟 (范围 1 ~ 1440，保存后调度立即生效)</span>
+                </div>
+              </div>
+
+              {/* 回溯时间窗口设置 */}
+              <div className="p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-[var(--text-primary)]">
+                    {tr('setScanLookbackTitle')}
+                  </label>
+                  <span className="text-[11px] text-[#f5c042] font-mono font-bold">
+                    过去 {scanLookbackHours || '24'} 小时
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  {tr('setScanLookbackDesc')}
+                </p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[
+                    { val: '6', label: '6 小时 (近段热点)' },
+                    { val: '12', label: '12 小时 (半天)' },
+                    { val: '24', label: '24 小时 (标准推荐)' },
+                    { val: '48', label: '48 小时 (深度回溯)' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setScanLookbackHours(preset.val)}
+                      className={`px-2.5 py-1 rounded text-[11px] font-mono transition cursor-pointer ${
+                        String(scanLookbackHours) === preset.val
+                          ? 'bg-[#f5c042] text-black font-bold shadow-sm'
+                          : 'bg-[var(--bg-base)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

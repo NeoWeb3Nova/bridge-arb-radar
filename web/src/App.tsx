@@ -188,13 +188,10 @@ export const App: React.FC = () => {
             {/* 设置按钮 */}
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer relative"
+              className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
               title={tr('settingsTitle')}
             >
               <Settings size={15} />
-              {(state?.settings?.notifications?.web?.enabled || state?.settings?.notifications?.telegram?.enabled) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1 shadow-sm shadow-emerald-400" />
-              )}
             </button>
 
             {/* 金箔主操作按钮 */}

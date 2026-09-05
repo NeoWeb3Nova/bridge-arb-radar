@@ -234,6 +234,13 @@ const DICT = {
     setNotifTgTestFail: '发送失败',
     setNotifMinSpread: '触发推送最低净价差 (%)',
     setNotifMinSpreadPh: '默认 1.0 (仅推送净价差 ≥ 设定值的优质机会)',
+    // Scan settings
+    setScanTabTitle: '自动扫描与调度',
+    setScanAutoEnable: '启用后台全自动多链轮巡扫描',
+    setScanIntervalTitle: '自动扫描轮巡间隔 (分钟)',
+    setScanIntervalDesc: '系统将在后台按设定周期自动扫描各跨链桥最新流水并校验套利机会。保存后立即生效。',
+    setScanLookbackTitle: '流水扫描回溯窗口 (小时)',
+    setScanLookbackDesc: '每次扫描拉取过去多少小时内的跨链桥记录（默认 24 小时）。',
   },
   en: {
     // App header & nav
@@ -466,6 +473,13 @@ const DICT = {
     setNotifTgTestFail: 'Send failed',
     setNotifMinSpread: 'Minimum Net Spread to Alert (%)',
     setNotifMinSpreadPh: 'Default 1.0 (only alerts when net spread ≥ threshold)',
+    // Scan settings
+    setScanTabTitle: 'Scan & Schedule',
+    setScanAutoEnable: 'Enable Automated Multi-Chain Background Scanning',
+    setScanIntervalTitle: 'Scan Schedule Interval (Minutes)',
+    setScanIntervalDesc: 'The system automatically polls bridges and checks for arb spreads in the background. Takes effect immediately upon save.',
+    setScanLookbackTitle: 'Transfer Lookback Window (Hours)',
+    setScanLookbackDesc: 'Hours of transfer history pulled per scan cycle (default: 24 hours).',
   },
 };
 
