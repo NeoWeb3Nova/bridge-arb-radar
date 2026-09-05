@@ -80,6 +80,58 @@ export interface OpportunityItem {
   security?: SecurityCheckResult;
 }
 
+export interface LiveQuoteResult {
+  ok: boolean;
+  symbol: string;
+  buyChain: string;
+  buyAddress?: string;
+  sellChain: string;
+  sellAddress?: string;
+  snapshot: {
+    buyPrice: number | null;
+    sellPrice: number | null;
+    spreadPct: number | null;
+    ts?: string | null;
+  };
+  live: {
+    buyPrice: number;
+    sellPrice: number;
+    spreadPct: number;
+    buyDex?: string;
+    sellDex?: string;
+    buyLiquidityUsd?: number;
+    sellLiquidityUsd?: number;
+    buyVolume24h?: number;
+    sellVolume24h?: number;
+    buyPairUrl?: string;
+    sellPairUrl?: string;
+    updatedAt: number;
+  } | null;
+  drift: {
+    buyPriceDeltaPct: number;
+    sellPriceDeltaPct: number;
+    spreadDeltaPct: number;
+  } | null;
+  bridge: {
+    bridgeName: string;
+    bridgeFeeUsd: number;
+    gasFeeUsd: number;
+    totalCostUsd: number;
+    etaSeconds: number;
+    isLiveQuote: boolean;
+  } | null;
+  simulation: {
+    principalUsd: number;
+    grossProfitUsd: number;
+    totalCostUsd: number;
+    netProfitUsd: number;
+    netYieldPct: number;
+  } | null;
+  status: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'UNAVAILABLE';
+  statusMessage: string;
+  checkedAt: string;
+}
+
 export interface TokenSecurityDetail {
   safe: boolean;
   isHoneypot: boolean;

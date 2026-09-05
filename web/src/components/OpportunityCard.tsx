@@ -1,6 +1,6 @@
 import React from 'react';
 import { OpportunityItem } from '../types';
-import { usd, usdCompact } from '../utils/format';
+import { usd, usdCompact, agoSec } from '../utils/format';
 import { VerdictBadge } from './VerdictBadge';
 import { ArrowRight, ExternalLink, Activity, Copy, Check, FileEdit, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
@@ -103,8 +103,13 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
             <div className={`font-mono-num font-extrabold text-base leading-none ${isPositive ? 'text-[#f5c042]' : 'text-[var(--text-secondary)]'}`}>
               +{opp.spreadPct.toFixed(2)}%
             </div>
-            <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5">
-              Δ {priceDelta >= 0 ? '+' : ''}{usd(priceDelta)}
+            <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 flex items-center justify-end gap-1">
+              <span>Δ {priceDelta >= 0 ? '+' : ''}{usd(priceDelta)}</span>
+              {opp.ts && (
+                <span className="text-[9px] text-[var(--text-muted)] opacity-80" title={`快照时间: ${new Date(opp.ts).toLocaleTimeString()}`}>
+                  · {agoSec(opp.ts, locale)}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -226,10 +231,10 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
               onSelect?.(opp);
             }}
             className="px-2 py-0.5 rounded bg-[#f5c042]/10 hover:bg-[#f5c042]/25 text-[#f5c042] border border-[#f5c042]/30 transition flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-            title={locale === 'zh' ? '记一笔 / 追踪此套利' : 'Log / Track Trade'}
+            title={locale === 'zh' ? '点击进行实时二次验价与操盘决策' : 'Live Re-quote & Track'}
           >
             <FileEdit size={10} />
-            <span>{locale === 'zh' ? '记一笔' : 'Track'}</span>
+            <span>{locale === 'zh' ? '实时验价' : 'Live Quote'}</span>
           </button>
         </div>
       </div>

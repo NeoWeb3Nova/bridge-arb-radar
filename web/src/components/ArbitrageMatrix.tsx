@@ -844,10 +844,10 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                               <button
                                 onClick={() => onSelectOpp(row)}
                                 className="px-2 py-1 rounded bg-[#f5c042]/15 hover:bg-[#f5c042]/25 text-[#f5c042] border border-[#f5c042]/30 text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
-                                title="调出决策操盘弹窗"
+                                title={locale === 'zh' ? '点击进行毫秒级实时二次验价与操盘决策' : 'Live Re-quote & Track'}
                               >
                                 <FileEdit size={11} />
-                                <span>{tr('dmTrack')}</span>
+                                <span>{locale === 'zh' ? '实时验价' : tr('dmTrack')}</span>
                               </button>
                               <button
                                 onClick={() => setExpandedKey(isExpanded ? null : row.uniqueKey)}

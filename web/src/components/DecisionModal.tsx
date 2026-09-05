@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { OpportunityItem } from '../types';
-import { usd } from '../utils/format';
-import { X, Save, Plus, ArrowRight, History } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { OpportunityItem, LiveQuoteResult } from '../types';
+import { usd, usdCompact, ago } from '../utils/format';
+import { 
+  X, Save, Plus, ArrowRight, History, RefreshCw, ExternalLink, 
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, 
+  DollarSign, Activity, Zap, ShieldAlert, ShieldCheck
+} from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
+import { VerdictBadge } from './VerdictBadge';
 
 interface Props {
   item: OpportunityItem | null;
@@ -11,20 +16,84 @@ interface Props {
 }
 
 export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
-  const { t: tr } = useI18n();
+  const { t: tr, locale } = useI18n();
   const [status, setStatus] = useState<string>('todo');
   const [logText, setLogText] = useState('');
   const [pnlDelta, setPnlDelta] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
-  // 每次打开弹窗或切换标的时，清空输入框，准备记录全新一笔操作
+  // 实时验价相关状态
+  const [liveQuote, setLiveQuote] = useState<LiveQuoteResult | null>(null);
+  const [loadingLive, setLoadingLive] = useState(false);
+  const [principalUsd, setPrincipalUsd] = useState<number>(1000);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [countdown, setCountdown] = useState(10);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchLiveQuote = async (isManual = false) => {
+    if (!item) return;
+    setLoadingLive(true);
+    try {
+      const p = new URLSearchParams({
+        symbol: item.symbol,
+        buyChain: item.buyChain,
+        buyAddress: item.buyAddress || '',
+        sellChain: item.sellChain,
+        sellAddress: item.sellAddress || '',
+        snapshotBuyPrice: String(item.buyPrice || ''),
+        snapshotSellPrice: String(item.sellPrice || ''),
+        snapshotSpreadPct: String(item.spreadPct || ''),
+        snapshotTs: item.ts || '',
+        amountUsd: String(principalUsd),
+        force: isManual ? '1' : '0',
+      });
+      const res = await fetch(`/api/opportunity/live?${p.toString()}`);
+      const data = await res.json();
+      if (data.ok) {
+        setLiveQuote(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch live quote:', e);
+    } finally {
+      setLoadingLive(false);
+      setCountdown(10);
+    }
+  };
+
+  // 每次打开弹窗或标的切换时，初始化表单并立即触发实时二次验价
   useEffect(() => {
     if (item) {
       setStatus(item.decision?.status || 'todo');
       setLogText('');
       setPnlDelta('');
+      setLiveQuote(null);
+      fetchLiveQuote(true);
     }
   }, [item]);
+
+  // 本金切换时重新测算
+  useEffect(() => {
+    if (item && liveQuote) {
+      fetchLiveQuote(false);
+    }
+  }, [principalUsd]);
+
+  // 自动倒计时与定时轮询
+  useEffect(() => {
+    if (!item || !autoRefresh) return;
+    timerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          fetchLiveQuote(false);
+          return 10;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [item, autoRefresh, principalUsd]);
 
   if (!item) return null;
 
@@ -73,128 +142,437 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
     }
   };
 
+  // 一键将实时验价结果填入操盘笔记
+  const insertLiveQuoteToNote = () => {
+    if (!liveQuote?.live) return;
+    const { buyPrice, sellPrice, spreadPct, buyDex, sellDex } = liveQuote.live;
+    const text = `【实时现货验价】买入: ${item.buyChainName} @${buyPrice} (${buyDex || 'DEX'}) → 卖出: ${item.sellChainName} @${sellPrice} (${sellDex || 'DEX'})，实时价差: ${spreadPct > 0 ? '+' : ''}${spreadPct.toFixed(2)}%，扣除跨链成本预估净利: ${usd(liveQuote.simulation?.netProfitUsd || 0)}`;
+    setLogText(text);
+  };
+
+  const isLive = !!liveQuote?.live;
+  const live = liveQuote?.live;
+  const drift = liveQuote?.drift;
+  const bridge = liveQuote?.bridge;
+  const sim = liveQuote?.simulation;
+  const quoteStatus = liveQuote?.status || 'UNAVAILABLE';
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="terminal-panel w-full max-w-lg rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        {/* 头部 */}
-        <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
-              <span>{item.symbol} 套利执行追踪</span>
-              <span className="font-mono-num text-xs text-emerald-400 font-extrabold">+{item.spreadPct.toFixed(2)}%</span>
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="terminal-panel w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] border border-[var(--border-subtle)]">
+        {/* 头部：标的与实时验价标识 */}
+        <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h3 className="font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+              <span>{item.symbol}</span>
+              <VerdictBadge verdict={item.verdict} size="xs" />
             </h3>
-            <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5 mt-0.5">
-              <span>{item.buyChainName} ({usd(item.buyPrice)})</span>
-              <ArrowRight size={12} className="text-[var(--text-muted)]" />
-              <span>{item.sellChainName} ({usd(item.sellPrice)})</span>
+
+            {/* 实时验价状态指示胶囊 */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[10px] font-mono">
+              {loadingLive ? (
+                <span className="flex items-center gap-1 text-sky-400">
+                  <RefreshCw size={10} className="animate-spin" />
+                  <span>DEX 实时询价中...</span>
+                </span>
+              ) : isLive ? (
+                <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>LIVE 现货实时行情</span>
+                </span>
+              ) : (
+                <span className="text-[var(--text-muted)]">快照数据</span>
+              )}
             </div>
           </div>
-          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 transition cursor-pointer">
-            <X size={18} />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* 自动刷新开关 */}
+            <label className="hidden sm:flex items-center gap-1 text-[10px] text-[var(--text-muted)] cursor-pointer select-none">
+              <input 
+                type="checkbox" 
+                checked={autoRefresh} 
+                onChange={(e) => setAutoRefresh(e.target.checked)} 
+                className="rounded border-[var(--border-subtle)] accent-[#f5c042] cursor-pointer"
+              />
+              <span>自动轮询 {autoRefresh ? `(${countdown}s)` : ''}</span>
+            </label>
+
+            {/* 手动刷新按钮 */}
+            <button
+              onClick={() => fetchLiveQuote(true)}
+              disabled={loadingLive}
+              className="px-2 py-1 rounded bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              title="立即向 DEXScreener 与跨链聚合器发起最新一轮现货验价"
+            >
+              <RefreshCw size={11} className={loadingLive ? 'animate-spin text-[#f5c042]' : ''} />
+              <span className="hidden sm:inline">立即验价</span>
+            </button>
+
+            <button 
+              onClick={onClose} 
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded hover:bg-[var(--bg-surface)] transition cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        {/* 内容区 */}
+        {/* 内容滚动区 */}
         <div className="p-4 overflow-y-auto space-y-4 text-xs">
-          {/* 状态与盈亏概览 */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-[var(--bg-elevated)]/50 p-3 rounded border border-[var(--border-subtle)]">
-              <div className="text-[11px] text-[var(--text-secondary)] mb-1">执行状态</div>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded px-2 py-1.5 text-xs text-[var(--text-primary)] font-medium focus:outline-none focus:border-[#f5c042]"
-              >
-                <option value="todo">待定 (Todo)</option>
-                <option value="watching">👀 观察中 (Watching)</option>
-                <option value="executed">⚡ 已执行 (Executed)</option>
-                <option value="closed">💰 已结算 (Closed)</option>
-                <option value="dropped">🛑 放弃 (Dropped)</option>
-              </select>
-            </div>
 
-            <div className="bg-[var(--bg-elevated)]/50 p-3 rounded border border-[var(--border-subtle)]">
-              <div className="text-[11px] text-[var(--text-secondary)] mb-1">该单已实现盈亏 (Realized)</div>
-              <div className={`font-mono-num text-lg font-bold ${currentPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {currentPnl >= 0 ? '+' : ''}{usd(currentPnl)}
-              </div>
-            </div>
-          </div>
-
-          {/* 追加行动与盈亏 */}
-          <form onSubmit={handleSave} className="space-y-3 bg-[var(--bg-elevated)]/30 p-3.5 rounded border border-[var(--border-subtle)]">
-            <div className="font-bold text-[var(--text-primary)] flex items-center gap-1.5 text-xs">
-              <Plus size={14} className="text-[#f5c042]" />
-              追加操盘笔记 / 本次盈亏结算
-            </div>
-
-            <div>
-              <textarea
-                value={logText}
-                onChange={(e) => setLogText(e.target.value)}
-                placeholder="记录操作过程：例如「在 BSC 买入 500 USDT、已成功跨链至以太坊、在 Uniswap 出货成交...」"
-                rows={3}
-                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded p-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
-              />
-            </div>
-
-            <div>
-              <label className="text-[var(--text-secondary)] block mb-1">本次产生盈亏变化 Δ USD (正数记赚，负数记亏，如 45 或 -8.5)：</label>
-              <input
-                type="number"
-                step="0.01"
-                value={pnlDelta}
-                onChange={(e) => setPnlDelta(e.target.value)}
-                placeholder="+50.00 或 -12.50"
-                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded px-3 py-1.5 font-mono text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
-              />
-            </div>
-          </form>
-
-          {/* 历史操盘日志流 */}
-          {journal.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-[var(--text-secondary)] font-bold flex items-center gap-1.5">
-                <History size={13} className="text-[var(--text-muted)]" />
-                历史操作与复盘记录 ({journal.length})
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {journal.map((j, i) => (
-                  <div key={i} className="bg-[var(--bg-surface)] p-2.5 rounded border border-[var(--border-subtle)] text-[11px] space-y-1">
-                    <div className="flex items-center justify-between text-[var(--text-secondary)]">
-                      <span className="font-mono">{new Date(j.ts).toLocaleString()}</span>
-                      {j.pnlDeltaUsd != null && (
-                        <span className={`font-mono-num font-bold ${j.pnlDeltaUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {j.pnlDeltaUsd >= 0 ? '+' : ''}{usd(j.pnlDeltaUsd)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[var(--text-primary)]">{j.text}</div>
-                  </div>
-                ))}
+          {/* 1. 实时时效性与风控预警横幅 */}
+          {quoteStatus === 'ACTIVE' && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 grow">
+                <div className="font-bold text-xs text-emerald-400 flex items-center justify-between">
+                  <span>机会当前仍然有效（实测净利为正）</span>
+                  <span className="font-mono text-[11px]">实时价差: +{live?.spreadPct.toFixed(2)}%</span>
+                </div>
+                <div className="text-[11px] text-emerald-300/80">
+                  {liveQuote?.statusMessage}
+                </div>
               </div>
             </div>
           )}
+
+          {quoteStatus === 'INVERTED' && (
+            <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/40 text-rose-200 flex items-start gap-2.5 animate-pulse">
+              <AlertTriangle size={16} className="text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 grow">
+                <div className="font-bold text-xs text-rose-400 flex items-center justify-between">
+                  <span>⚠️ 警惕：价差已抹平或倒挂！切勿盲目入场！</span>
+                  <span className="font-mono text-[11px]">现价差: {live?.spreadPct.toFixed(2)}%</span>
+                </div>
+                <div className="text-[11px] text-rose-200/90">
+                  买入端现价已上涨或卖出端价格已下跌，两端现货价格已平价反转。套利窗口已关闭，强行执行将直接产生亏损！
+                </div>
+              </div>
+            </div>
+          )}
+
+          {quoteStatus === 'NARROWED' && (
+            <div className="p-3 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-200 flex items-start gap-2.5">
+              <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 grow">
+                <div className="font-bold text-xs text-amber-400 flex items-center justify-between">
+                  <span>⚠️ 注意：价差已收窄，利润不足以覆盖跨链成本</span>
+                  <span className="font-mono text-[11px]">现价差: +{live?.spreadPct.toFixed(2)}%</span>
+                </div>
+                <div className="text-[11px] text-amber-200/90">
+                  {liveQuote?.statusMessage}。建议继续观察，等待价差再次拉开或改用更低成本通道。
+                </div>
+              </div>
+            </div>
+          )}
+
+          {quoteStatus === 'LIQUIDITY_DROP' && (
+            <div className="p-3 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-200 flex items-start gap-2.5">
+              <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 grow">
+                <div className="font-bold text-xs text-amber-400">⚠️ 池子流动性不足预警</div>
+                <div className="text-[11px] text-amber-200/90">{liveQuote?.statusMessage}</div>
+              </div>
+            </div>
+          )}
+
+          {/* 2. 买卖两端现货行情：快照 vs 实时现价深度比对 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)] font-medium">
+              <span>两端 DEX 现货价格穿透比对</span>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                雷达发现于 {ago(item.ts)} ({new Date(item.ts || Date.now()).toLocaleTimeString()})
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* 买入端卡片 */}
+              <div className="p-3 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#f5c042]/15 text-[#f5c042] border border-[#f5c042]/30">
+                      买入腿
+                    </span>
+                    <span className="font-bold text-[var(--text-primary)] text-xs">{item.buyChainName}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">({live?.buyDex || item.buyDex || 'DEX'})</span>
+                  </div>
+                  {item.buyUrl && (
+                    <a
+                      href={live?.buyPairUrl || item.buyUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-[#f5c042] hover:underline flex items-center gap-0.5"
+                    >
+                      <span>买入池</span>
+                      <ExternalLink size={10} />
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-[10px] text-[var(--text-muted)]">实时现货单价</div>
+                    <div className="font-mono-num text-lg font-bold text-[var(--text-primary)]">
+                      {usd(live?.buyPrice || item.buyPrice)}
+                    </div>
+                  </div>
+                  {drift && drift.buyPriceDeltaPct !== 0 && (
+                    <div className="text-right">
+                      <div className="text-[10px] text-[var(--text-muted)]">较发现时</div>
+                      <div className={`font-mono text-xs font-bold flex items-center gap-0.5 ${
+                        drift.buyPriceDeltaPct > 0 ? 'text-rose-400' : 'text-emerald-400'
+                      }`}>
+                        {drift.buyPriceDeltaPct > 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                        <span>{drift.buyPriceDeltaPct > 0 ? '+' : ''}{drift.buyPriceDeltaPct.toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-[var(--border-subtle)]/60 flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono">
+                  <span>快照价: {usd(item.buyPrice)}</span>
+                  <span>池深: {usdCompact(live?.buyLiquidityUsd || item.minLiquidityUsd)}</span>
+                </div>
+              </div>
+
+              {/* 卖出端卡片 */}
+              <div className="p-3 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      卖出腿
+                    </span>
+                    <span className="font-bold text-[var(--text-primary)] text-xs">{item.sellChainName}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">({live?.sellDex || item.sellDex || 'DEX'})</span>
+                  </div>
+                  {item.sellUrl && (
+                    <a
+                      href={live?.sellPairUrl || item.sellUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-[#f5c042] hover:underline flex items-center gap-0.5"
+                    >
+                      <span>卖出池</span>
+                      <ExternalLink size={10} />
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-[10px] text-[var(--text-muted)]">实时现货单价</div>
+                    <div className="font-mono-num text-lg font-bold text-[var(--text-primary)]">
+                      {usd(live?.sellPrice || item.sellPrice)}
+                    </div>
+                  </div>
+                  {drift && drift.sellPriceDeltaPct !== 0 && (
+                    <div className="text-right">
+                      <div className="text-[10px] text-[var(--text-muted)]">较发现时</div>
+                      <div className={`font-mono text-xs font-bold flex items-center gap-0.5 ${
+                        drift.sellPriceDeltaPct >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      }`}>
+                        {drift.sellPriceDeltaPct >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                        <span>{drift.sellPriceDeltaPct > 0 ? '+' : ''}{drift.sellPriceDeltaPct.toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-[var(--border-subtle)]/60 flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono">
+                  <span>快照价: {usd(item.sellPrice)}</span>
+                  <span>池深: {usdCompact(live?.sellLiquidityUsd || item.minLiquidityUsd)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. 实时跨链通道费用与净盈亏动态试算 */}
+          <div className="p-3.5 rounded-lg bg-[var(--bg-elevated)]/40 border border-[var(--border-subtle)] space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                <Zap size={14} className="text-[#f5c042]" />
+                <span>实时净利润与通道模拟测算</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-[var(--text-muted)] mr-1">本金:</span>
+                {[500, 1000, 2000, 5000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setPrincipalUsd(amt)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition cursor-pointer ${
+                      principalUsd === amt
+                        ? 'bg-[#f5c042] text-black font-bold'
+                        : 'bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+              <div className="p-2 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                <div className="text-[10px] text-[var(--text-muted)]">实时毛价差</div>
+                <div className={`font-mono-num font-bold text-sm mt-0.5 ${
+                  (live?.spreadPct ?? item.spreadPct) > 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {(live?.spreadPct ?? item.spreadPct) > 0 ? '+' : ''}{(live?.spreadPct ?? item.spreadPct).toFixed(2)}%
+                </div>
+              </div>
+
+              <div className="p-2 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                <div className="text-[10px] text-[var(--text-muted)]">毛收益 ({principalUsd}U)</div>
+                <div className="font-mono-num font-bold text-sm text-[var(--text-primary)] mt-0.5">
+                  {usd(sim?.grossProfitUsd || ((item.spreadPct / 100) * principalUsd))}
+                </div>
+              </div>
+
+              <div className="p-2 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                <div className="text-[10px] text-[var(--text-muted)]">
+                  跨链总成本 {bridge ? `(~${bridge.etaSeconds}s)` : ''}
+                </div>
+                <div className="font-mono-num font-bold text-sm text-rose-400 mt-0.5">
+                  -{usd(sim?.totalCostUsd || bridge?.totalCostUsd || 4.5)}
+                </div>
+              </div>
+
+              <div className="p-2 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                <div className="text-[10px] text-[var(--text-muted)]">预计净利润</div>
+                <div className={`font-mono-num font-extrabold text-sm mt-0.5 ${
+                  (sim?.netProfitUsd ?? 0) > 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {(sim?.netProfitUsd ?? 0) > 0 ? '+' : ''}{usd(sim?.netProfitUsd || 0)}
+                </div>
+              </div>
+            </div>
+
+            {bridge && (
+              <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono px-1">
+                <span>直连路由: {bridge.bridgeName} ({bridge.isLiveQuote ? '实时 Gas & 协议费已锁定' : '通道测算'})</span>
+                <span>净收益率: <b className={(sim?.netYieldPct ?? 0) > 0 ? 'text-emerald-400' : 'text-rose-400'}>{(sim?.netYieldPct ?? 0) > 0 ? '+' : ''}{sim?.netYieldPct}%</b></span>
+              </div>
+            )}
+          </div>
+
+          {/* 4. 决策操盘状态与复盘日志 */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[var(--text-primary)] text-xs">执行状态与操盘日志记录</span>
+              {isLive && (
+                <button
+                  type="button"
+                  onClick={insertLiveQuoteToNote}
+                  className="text-[10px] text-[#f5c042] hover:underline flex items-center gap-1 cursor-pointer"
+                  title="自动将上方实时验价的价格与价差填入本次笔记"
+                >
+                  <Plus size={11} />
+                  <span>一键填入最新验价</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[var(--bg-surface)] p-2.5 rounded border border-[var(--border-subtle)]">
+                <div className="text-[10px] text-[var(--text-secondary)] mb-1">执行状态</div>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded px-2 py-1 text-xs text-[var(--text-primary)] font-medium focus:outline-none focus:border-[#f5c042]"
+                >
+                  <option value="todo">待定 (Todo)</option>
+                  <option value="watching">👀 观察中 (Watching)</option>
+                  <option value="executed">⚡ 已执行 (Executed)</option>
+                  <option value="closed">💰 已结算 (Closed)</option>
+                  <option value="dropped">🛑 放弃 (Dropped)</option>
+                </select>
+              </div>
+
+              <div className="bg-[var(--bg-surface)] p-2.5 rounded border border-[var(--border-subtle)]">
+                <div className="text-[10px] text-[var(--text-secondary)] mb-1">该标的已实现盈亏</div>
+                <div className={`font-mono-num text-base font-bold ${currentPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {currentPnl >= 0 ? '+' : ''}{usd(currentPnl)}
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-2.5 bg-[var(--bg-surface)] p-3 rounded border border-[var(--border-subtle)]">
+              <div>
+                <textarea
+                  value={logText}
+                  onChange={(e) => setLogText(e.target.value)}
+                  placeholder="记录操作过程与复盘笔记：例如「已在买端成交 1,000 U，正通过 Relay 跨链至目标链出货...」"
+                  rows={2}
+                  className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded p-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-[var(--text-secondary)] block mb-1">本次产生的真实净盈亏 Δ USD (盈利记正数，亏损记负数)：</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={pnlDelta}
+                  onChange={(e) => setPnlDelta(e.target.value)}
+                  placeholder="+25.50 或 -5.20"
+                  className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded px-2.5 py-1 font-mono text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
+                />
+              </div>
+            </form>
+
+            {/* 历史操盘日志流 */}
+            {journal.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-[var(--text-secondary)] font-bold flex items-center gap-1 text-[11px]">
+                  <History size={12} className="text-[var(--text-muted)]" />
+                  <span>历史复盘记录 ({journal.length})</span>
+                </div>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 font-mono text-[10px]">
+                  {journal.map((j, i) => (
+                    <div key={i} className="bg-[var(--bg-surface)] p-2 rounded border border-[var(--border-subtle)] space-y-0.5">
+                      <div className="flex items-center justify-between text-[var(--text-muted)]">
+                        <span>{new Date(j.ts).toLocaleString()}</span>
+                        {j.pnlDeltaUsd != null && (
+                          <span className={`font-bold ${j.pnlDeltaUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {j.pnlDeltaUsd >= 0 ? '+' : ''}{usd(j.pnlDeltaUsd)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[var(--text-primary)] font-sans text-[11px]">{j.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
 
-        {/* 底部保存按钮 */}
-        <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3.5 py-1.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs cursor-pointer"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="impeccable-btn-primary flex items-center gap-1.5 px-4 py-1.5 text-xs tracking-tight cursor-pointer disabled:opacity-50"
-          >
-            <Save size={13} />
-            <span>{saving ? '保存中...' : '提交记录'}</span>
-          </button>
+        {/* 底部按钮栏 */}
+        <div className="p-3.5 border-t border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 flex items-center justify-between gap-2">
+          <div className="text-[10px] text-[var(--text-muted)] font-mono">
+            {liveQuote?.checkedAt ? `最近验价: ${new Date(liveQuote.checkedAt).toLocaleTimeString()}` : ''}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs cursor-pointer"
+            >
+              关闭
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="impeccable-btn-primary flex items-center gap-1.5 px-4 py-1.5 text-xs tracking-tight cursor-pointer disabled:opacity-50"
+            >
+              <Save size={13} />
+              <span>{saving ? '保存中...' : '提交记录'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
