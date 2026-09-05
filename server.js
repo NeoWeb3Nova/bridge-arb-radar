@@ -82,7 +82,10 @@ function scheduleScan() {
     nextScanAtMs = Date.now() + mins * 60000;
     if (scanning) return;
     scanning = true;
-    try { await engine.runScan({}); } catch (e) { console.error('[scan]', e.message); } finally { scanning = false; }
+    try { await engine.runScan({}); } catch (e) { console.error('[scan]', e.message); } finally {
+      scanning = false;
+      events.broadcast('scan_completed', { at: new Date().toISOString() });
+    }
   }, mins * 60000);
   scanTimer.unref?.();
 }

@@ -115,13 +115,40 @@ export const App: React.FC = () => {
     return () => es.close();
   }, []);
 
+  useEffect(() => {
+    if (!scanning) return;
+    const pollTimer = setInterval(() => {
+      fetch('/api/state')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok) {
+            setState(d);
+            if (!d.scanning) setScanning(false);
+          }
+        })
+        .catch(() => {});
+    }, 3500);
+
+    const fallbackTimer = setTimeout(() => {
+      setScanning(false);
+      fetchState();
+    }, 45000);
+
+    return () => {
+      clearInterval(pollTimer);
+      clearTimeout(fallbackTimer);
+    };
+  }, [scanning]);
+
   const handleScan = async () => {
     setScanning(true);
     try {
       await fetch('/api/scan', { method: 'POST' });
     } catch (e) {
       console.error(e);
+    } finally {
       setScanning(false);
+      fetchState();
     }
   };
 
