@@ -85,10 +85,15 @@ export const ArbitrageMatrix: React.FC<Props> = ({
     setLoadingQuotes((prev) => ({ ...prev, [key]: true }));
     try {
       const q = new URLSearchParams({
+        symbol: opp.symbol,
         buyChain: opp.buyChain,
         sellChain: opp.sellChain,
         buyAddress: opp.buyAddress || '',
         sellAddress: opp.sellAddress || '',
+        snapshotBuyPrice: String(opp.buyPrice || ''),
+        snapshotSellPrice: String(opp.sellPrice || ''),
+        snapshotSpreadPct: String(opp.spreadPct || ''),
+        snapshotTs: opp.ts || '',
         amountUsd: String(capital),
         force: force ? 'true' : 'false',
         _t: String(Date.now()),
@@ -570,6 +575,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                     const flash = flashMap[row.uniqueKey];
                     const flashClass = flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : '';
                     const isNetPositive = row.netCalc.isProfitable;
+                    const liveQ = liveQuotes[row.uniqueKey];
+                    const currentBuyPrice = liveQ?.live?.buyPrice || row.buyPrice;
+                    const currentSellPrice = liveQ?.live?.sellPrice || row.sellPrice;
+                    const currentSpreadPct = liveQ?.live?.spreadPct !== undefined ? liveQ.live.spreadPct : row.spreadPct;
+                    const hasLivePrice = !!liveQ?.live;
 
                     return (
                       <React.Fragment key={row.uniqueKey}>
@@ -661,12 +671,17 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 {row.buyDex || 'DEX'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1.5 mt-1">
                               <span className="font-mono-num font-bold text-xs text-[var(--text-primary)]">
-                                {usd(row.buyPrice)}
+                                {usd(currentBuyPrice)}
                               </span>
+                              {hasLivePrice && (
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" title="实时代币现货单价">
+                                  LIVE
+                                </span>
+                              )}
                               {row.buyAddress && (
-                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)]">
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] ml-auto">
                                   <button
                                     onClick={(e) => handleCopy(e, row.buyAddress, `${row.uniqueKey}-buy`)}
                                     className="hover:text-[var(--text-primary)] cursor-pointer"
@@ -721,12 +736,17 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 {row.sellDex || 'DEX'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1.5 mt-1">
                               <span className="font-mono-num font-bold text-xs text-[var(--text-primary)]">
-                                {usd(row.sellPrice)}
+                                {usd(currentSellPrice)}
                               </span>
+                              {hasLivePrice && (
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" title="实时代币现货单价">
+                                  LIVE
+                                </span>
+                              )}
                               {row.sellAddress && (
-                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)]">
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] ml-auto">
                                   <button
                                     onClick={(e) => handleCopy(e, row.sellAddress, `${row.uniqueKey}-sell`)}
                                     className="hover:text-[var(--text-primary)] cursor-pointer"
@@ -752,11 +772,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
                           {/* 5. 名义价差 */}
                           <td className="py-2.5 px-3 whitespace-nowrap font-mono-num">
-                            <div className="font-bold text-xs text-[#f5c042]">
-                              +{row.spreadPct.toFixed(2)}%
+                            <div className={`font-bold text-xs ${currentSpreadPct <= 0 ? 'text-rose-400 animate-pulse' : 'text-[#f5c042]'}`}>
+                              {currentSpreadPct <= 0 ? `🚨 倒挂 ${currentSpreadPct.toFixed(2)}%` : `+${currentSpreadPct.toFixed(2)}%`}
                             </div>
                             <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                              Δ +{usd(row.netCalc.priceDelta)}
+                              Δ {row.netCalc.priceDelta >= 0 ? '+' : ''}{usd(row.netCalc.priceDelta)}
                             </div>
                           </td>
 
@@ -886,14 +906,34 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                     {isQuoting ? (
                                       <div className="flex items-center gap-2 text-sky-400 text-xs font-mono">
                                         <RefreshCw size={13} className="animate-spin text-sky-400" />
-                                        <span>直连 Li.Fi / Across / Stargate 跨链聚合器实时询价中...</span>
+                                        <span>1. 正在获取两端 DEX 代币实时现价 ➔ 2. 链上跨链通道费用询价中...</span>
                                       </div>
                                     ) : row.netCalc.isLiveQuote ? (
                                       <div className="flex flex-wrap items-center gap-2 text-xs">
                                         <span className="flex items-center gap-1.5 font-bold text-emerald-400">
                                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                          ● 链上实时询价已打通 ({row.netCalc.route.bridgeName})
+                                          ● 实时询价已打通 ({row.netCalc.route.bridgeName})
                                         </span>
+                                        {liveData?.live && (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)]">
+                                            代币现价: 买入 {usd(liveData.live.buyPrice)} / 卖出 {usd(liveData.live.sellPrice)} ({liveData.live.spreadPct > 0 ? `+${liveData.live.spreadPct.toFixed(2)}%` : `${liveData.live.spreadPct.toFixed(2)}%`})
+                                          </span>
+                                        )}
+                                        {liveData?.tokenAmount && (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/25">
+                                            搬运折合: {liveData.tokenAmount.toLocaleString()} {row.symbol}
+                                          </span>
+                                        )}
+                                        {liveData?.status === 'INVERTED' && (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                                            🚨 价差已倒挂
+                                          </span>
+                                        )}
+                                        {liveData?.status === 'NARROWED' && (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                            ⚠️ 价差收窄
+                                          </span>
+                                        )}
                                         {liveData?.hasApiKey && (
                                           <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                                             PRO KEY 加速

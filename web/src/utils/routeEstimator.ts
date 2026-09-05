@@ -1,5 +1,19 @@
 import { SecurityCheckResult } from '../types';
 
+export interface LiveTokenData {
+  buyPrice: number;
+  sellPrice: number;
+  spreadPct: number;
+  tokenAmount?: number;
+  buyDex?: string;
+  sellDex?: string;
+  buyLiquidityUsd?: number;
+  sellLiquidityUsd?: number;
+  buyVolume24h?: number;
+  sellVolume24h?: number;
+  updatedAt?: number;
+}
+
 // Cross-chain arbitrage routing and net fee estimator
 export interface LiveQuoteData {
   ok: boolean;
@@ -13,6 +27,15 @@ export interface LiveQuoteData {
   gasUsd: number;
   bridgeFeeUsd: number;
   totalFeeUsd: number;
+  tokenAmount?: number;
+  live?: LiveTokenData;
+  drift?: {
+    buyPriceDeltaPct: number;
+    sellPriceDeltaPct: number;
+    spreadDeltaPct: number;
+  };
+  status?: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'UNAVAILABLE';
+  statusMessage?: string;
   ttlSeconds?: number;
   updatedAt?: number;
   expiresAt?: number;
@@ -189,16 +212,23 @@ export function calculateNetArb(
     bridgeUrl: liveQuote.bridgeUrl || defaultRoute.bridgeUrl,
   } : defaultRoute;
 
-  const priceDelta = sellPrice - buyPrice;
+  // 必须优先使用最新实时获取的代币现价 (若实时验价已返回)
+  const effectiveBuyPrice = (liveQuote?.live?.buyPrice && liveQuote.live.buyPrice > 0)
+    ? liveQuote.live.buyPrice
+    : buyPrice;
+  const effectiveSellPrice = (liveQuote?.live?.sellPrice && liveQuote.live.sellPrice > 0)
+    ? liveQuote.live.sellPrice
+    : sellPrice;
+  const priceDelta = effectiveSellPrice - effectiveBuyPrice;
 
-  // 1. 代币数量与名义毛利
-  const tokensBought = buyPrice > 0 ? capitalUsd / buyPrice : 0;
-  const grossRevenueUsd = tokensBought * sellPrice;
+  // 1. 代币数量与名义毛利 (基于实时代币价格折算真实搬运代币数量)
+  const tokensBought = effectiveBuyPrice > 0 ? capitalUsd / effectiveBuyPrice : 0;
+  const grossRevenueUsd = tokensBought * effectiveSellPrice;
   const grossProfitUsd = grossRevenueUsd - capitalUsd;
 
   // 对照组：如果只搬 1,000 个代币的收益情况
-  const token1kCost = buyPrice * 1000;
-  const token1kRevenue = sellPrice * 1000;
+  const token1kCost = effectiveBuyPrice * 1000;
+  const token1kRevenue = effectiveSellPrice * 1000;
   const token1kProfit = token1kRevenue - token1kCost;
 
   // 2. Gas & Bridge Protocol Fees (若有实时询价，直接使用链上真实 Gas 与桥费)
