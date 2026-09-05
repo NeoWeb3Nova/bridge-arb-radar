@@ -39,11 +39,22 @@ function num(v, d = 2) {
   if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (Math.abs(n) >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+  if (Math.abs(n) < 0.0001 && Math.abs(n) > 0) {
+    const s = Math.abs(n).toFixed(18);
+    const m = s.match(/^0\.(0+)([1-9]\d{0,3})/);
+    if (m) {
+      const sub = String(m[1].length).split('').map(dig => ['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉'][dig] || dig).join('');
+      return `${n < 0 ? '-' : ''}0.0${sub}${m[2]}`;
+    }
+  }
   return n.toFixed(d);
 }
 function usd(v) {
   const n = Number(v);
-  return Number.isFinite(n) ? '$' + num(n, n < 10 ? 2 : 0) : '—';
+  if (!Number.isFinite(n)) return '—';
+  if (n === 0) return '$0.00';
+  if (Math.abs(n) < 0.0001) return '$' + num(n);
+  return '$' + num(n, n < 10 ? (n < 0.01 ? 4 : 2) : 0);
 }
 function ago(ts) {
   if (!ts) return '—';
