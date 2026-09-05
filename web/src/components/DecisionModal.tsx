@@ -356,10 +356,16 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                   </div>
                   <div className="flex items-center justify-between pt-0.5 border-t border-[var(--border-subtle)]/30">
                     <span>流动性池手续费:</span>
-                    <span className={`font-bold ${(live?.buyPoolFee || item.buyPoolFee || 0) >= 0.05 ? 'text-rose-400 animate-pulse' : ((live?.buyPoolFee || item.buyPoolFee || 0) > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
-                      {(((live?.buyPoolFee ?? item.buyPoolFee) ?? 0.003) * 100).toFixed(1)}%
-                      {(live?.buyPoolFee || item.buyPoolFee || 0) >= 0.05 ? ' 🚨陷阱池' : ''}
-                    </span>
+                    {(() => {
+                      const buyFee = live?.buyPoolFee ?? item.buyPoolFee ?? item.security?.buySecurity?.poolFee ?? 0.003;
+                      const isBuyTrap = buyFee >= 0.05 || (item.buyPoolFee != null && item.buyPoolFee >= 0.05) || !!item.security?.buySecurity?.isTrapPool;
+                      return (
+                        <span className={`font-bold ${isBuyTrap ? 'text-rose-400 animate-pulse' : (buyFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                          {(buyFee * 100).toFixed(1)}%
+                          {isBuyTrap ? ' 🚨陷阱池' : ''}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center justify-between">
                     <span>代币合约交易税:</span>
@@ -420,10 +426,16 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                   </div>
                   <div className="flex items-center justify-between pt-0.5 border-t border-[var(--border-subtle)]/30">
                     <span>流动性池手续费:</span>
-                    <span className={`font-bold ${(live?.sellPoolFee || item.sellPoolFee || 0) >= 0.05 ? 'text-rose-400 animate-pulse' : ((live?.sellPoolFee || item.sellPoolFee || 0) > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
-                      {(((live?.sellPoolFee ?? item.sellPoolFee) ?? 0.003) * 100).toFixed(1)}%
-                      {(live?.sellPoolFee || item.sellPoolFee || 0) >= 0.05 ? ' 🚨陷阱池' : ''}
-                    </span>
+                    {(() => {
+                      const sellFee = live?.sellPoolFee ?? item.sellPoolFee ?? item.security?.sellSecurity?.poolFee ?? 0.003;
+                      const isSellTrap = sellFee >= 0.05 || (item.sellPoolFee != null && item.sellPoolFee >= 0.05) || !!item.security?.sellSecurity?.isTrapPool;
+                      return (
+                        <span className={`font-bold ${isSellTrap ? 'text-rose-400 animate-pulse' : (sellFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                          {(sellFee * 100).toFixed(1)}%
+                          {isSellTrap ? ' 🚨陷阱池' : ''}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center justify-between">
                     <span>代币合约交易税:</span>

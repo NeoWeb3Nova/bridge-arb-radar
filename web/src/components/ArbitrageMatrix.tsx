@@ -1318,79 +1318,93 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       )}
                                     </div>
 
-                                    {/* GoPlus 智能合约貔貅与代码安全体检 */}
-                                    {row.security && (
-                                      <div className={`p-2 rounded border space-y-1.5 ${
-                                        row.security.isHoneypot
-                                          ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
-                                          : row.security.riskLevel === 'warning'
-                                          ? 'bg-amber-500/10 border-amber-500/25 text-amber-200'
-                                          : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-                                      }`}>
-                                        <div className="flex items-center justify-between text-[11px] font-sans font-bold">
-                                          <div className="flex items-center gap-1">
-                                            {row.security.isHoneypot ? <ShieldAlert size={12} className="text-rose-400" /> : <ShieldCheck size={12} className="text-emerald-400" />}
-                                            <span>GoPlus 智能合约代码安全审计:</span>
-                                          </div>
-                                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${
-                                            row.security.isHoneypot
-                                              ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse'
-                                              : row.security.riskLevel === 'warning'
-                                              ? 'bg-amber-500/20 text-amber-300'
-                                              : 'bg-emerald-500/20 text-emerald-300'
-                                          }`}>
-                                            {row.security.isHoneypot ? '🚨 貔貅高危' : (row.security.riskLevel === 'warning' ? '⚠️ 存在风险' : '✓ 代码安全')}
-                                          </span>
-                                        </div>
+                                    {/* GoPlus 智能合约貔貅与交易池代码安全体检 */}
+                                    {row.security && (() => {
+                                      const buyFee = liveData?.live?.buyPoolFee ?? row.netCalc.buyPoolFeeRate ?? row.buyPoolFee ?? row.security.buySecurity?.poolFee ?? 0.003;
+                                      const sellFee = liveData?.live?.sellPoolFee ?? row.netCalc.sellPoolFeeRate ?? row.sellPoolFee ?? row.security.sellSecurity?.poolFee ?? 0.003;
+                                      const isBuyTrap = buyFee >= 0.05 || !!row.security.buySecurity?.isTrapPool || (row.buyPoolFee != null && row.buyPoolFee >= 0.05);
+                                      const isSellTrap = sellFee >= 0.05 || !!row.security.sellSecurity?.isTrapPool || (row.sellPoolFee != null && row.sellPoolFee >= 0.05);
+                                      const hasTrap = isBuyTrap || isSellTrap || row.netCalc.isTrapPool || liveData?.isTrapPool || liveData?.status === 'TRAP_POOL' || row.poolFeeTrap;
 
-                                        <div className="text-[10px] leading-tight font-sans">
-                                          {row.security.riskReason}
-                                        </div>
+                                      return (
+                                        <div className={`p-2 rounded border space-y-1.5 ${
+                                          row.security.isHoneypot
+                                            ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                                            : hasTrap
+                                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-200'
+                                            : row.security.riskLevel === 'warning'
+                                            ? 'bg-amber-500/10 border-amber-500/25 text-amber-200'
+                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                                        }`}>
+                                          <div className="flex items-center justify-between text-[11px] font-sans font-bold">
+                                            <div className="flex items-center gap-1">
+                                              {(row.security.isHoneypot || hasTrap) ? <ShieldAlert size={12} className="text-rose-400" /> : <ShieldCheck size={12} className="text-emerald-400" />}
+                                              <span>GoPlus & DEX 交易池安全审计:</span>
+                                            </div>
+                                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${
+                                              row.security.isHoneypot
+                                                ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse'
+                                                : hasTrap
+                                                ? 'bg-rose-600/30 text-rose-200 font-bold animate-pulse border border-rose-500/40'
+                                                : row.security.riskLevel === 'warning'
+                                                ? 'bg-amber-500/20 text-amber-300'
+                                                : 'bg-emerald-500/20 text-emerald-300'
+                                            }`}>
+                                              {row.security.isHoneypot ? '🚨 貔貅高危' : (hasTrap ? '🚨 高费陷阱池' : (row.security.riskLevel === 'warning' ? '⚠️ 存在风险' : '✓ 代码安全'))}
+                                            </span>
+                                          </div>
 
-                                        <div className="grid grid-cols-2 gap-2 text-[9px] font-mono pt-1 border-t border-[var(--border-subtle)]/50">
-                                          <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5">
-                                            <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center">
-                                              <span>买入端 ({row.buyChain}):</span>
-                                              {(row.security.buySecurity?.poolType || row.buyPoolType) && (
-                                                <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                                                  {row.security.buySecurity?.poolType || row.buyPoolType}
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div>貔貅风险: {row.security.buySecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
-                                            <div>代币合约税: 买 {((row.security.buySecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.buySecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
-                                            <div className="flex items-center gap-1">
-                                              <span>池手续费:</span>
-                                              <span className={`font-bold ${(row.security.buySecurity?.isTrapPool || (row.buyPoolFee && row.buyPoolFee >= 0.05)) ? 'text-rose-400 animate-pulse' : ((row.security.buySecurity?.isHighFeePool || (row.buyPoolFee && row.buyPoolFee > 0.01)) ? 'text-amber-400' : 'text-emerald-400')}`}>
-                                                {((row.security.buySecurity?.poolFee ?? row.buyPoolFee ?? 0.003) * 100).toFixed(1)}%
-                                                {(row.security.buySecurity?.isTrapPool || (row.buyPoolFee && row.buyPoolFee >= 0.05)) ? ' 🚨陷阱' : ''}
-                                              </span>
-                                            </div>
-                                            <div>开源状态: {row.security.buySecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
+                                          <div className="text-[10px] leading-tight font-sans">
+                                            {hasTrap
+                                              ? (liveData?.details?.trapWarning || `交易池手续费高达 ${(Math.max(buyFee, sellFee) * 100).toFixed(1)}%（DEX Screener 默认未展示），扣除池费后无法套利，切勿执行！`)
+                                              : row.security.riskReason}
                                           </div>
-                                          <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5">
-                                            <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center">
-                                              <span>卖出端 ({row.sellChain}):</span>
-                                              {(row.security.sellSecurity?.poolType || row.sellPoolType) && (
-                                                <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                                                  {row.security.sellSecurity?.poolType || row.sellPoolType}
+
+                                          <div className="grid grid-cols-2 gap-2 text-[9px] font-mono pt-1 border-t border-[var(--border-subtle)]/50">
+                                            <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5">
+                                              <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center">
+                                                <span>买入端 ({row.buyChain}):</span>
+                                                {(liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType) && (
+                                                  <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
+                                                    {liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div>貔貅风险: {row.security.buySecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
+                                              <div>代币合约税: 买 {((row.security.buySecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.buySecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
+                                              <div className="flex items-center gap-1">
+                                                <span>池手续费:</span>
+                                                <span className={`font-bold ${isBuyTrap ? 'text-rose-400 animate-pulse font-extrabold' : (buyFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                                                  {(buyFee * 100).toFixed(1)}%
+                                                  {isBuyTrap ? ' 🚨陷阱' : ''}
                                                 </span>
-                                              )}
+                                              </div>
+                                              <div>开源状态: {row.security.buySecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
                                             </div>
-                                            <div>貔貅风险: {row.security.sellSecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
-                                            <div>代币合约税: 买 {((row.security.sellSecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.sellSecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
-                                            <div className="flex items-center gap-1">
-                                              <span>池手续费:</span>
-                                              <span className={`font-bold ${(row.security.sellSecurity?.isTrapPool || (row.sellPoolFee && row.sellPoolFee >= 0.05)) ? 'text-rose-400 animate-pulse' : ((row.security.sellSecurity?.isHighFeePool || (row.sellPoolFee && row.sellPoolFee > 0.01)) ? 'text-amber-400' : 'text-emerald-400')}`}>
-                                                {((row.security.sellSecurity?.poolFee ?? row.sellPoolFee ?? 0.003) * 100).toFixed(1)}%
-                                                {(row.security.sellSecurity?.isTrapPool || (row.sellPoolFee && row.sellPoolFee >= 0.05)) ? ' 🚨陷阱' : ''}
-                                              </span>
+                                            <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5">
+                                              <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center">
+                                                <span>卖出端 ({row.sellChain}):</span>
+                                                {(liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType) && (
+                                                  <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
+                                                    {liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div>貔貅风险: {row.security.sellSecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
+                                              <div>代币合约税: 买 {((row.security.sellSecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.sellSecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
+                                              <div className="flex items-center gap-1">
+                                                <span>池手续费:</span>
+                                                <span className={`font-bold ${isSellTrap ? 'text-rose-400 animate-pulse font-extrabold' : (sellFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                                                  {(sellFee * 100).toFixed(1)}%
+                                                  {isSellTrap ? ' 🚨陷阱' : ''}
+                                                </span>
+                                              </div>
+                                              <div>开源状态: {row.security.sellSecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
                                             </div>
-                                            <div>开源状态: {row.security.sellSecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
                                           </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      );
+                                    })()}
 
                                     {/* 双端流动性深度与 6h/24h 交易量审计 */}
                                     <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5 text-[10px] font-mono-num">
