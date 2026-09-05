@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { X, Globe, Shield, Save, Check, Bell, Send, Volume2, AlertCircle, CheckCircle2, Sliders } from 'lucide-react';
+import { 
+  X, Globe, Shield, Save, Check, Bell, Send, 
+  Volume2, AlertCircle, CheckCircle2, Sliders, ExternalLink, RefreshCw
+} from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 import { playOpportunitySound, requestNotificationPermission, sendDesktopNotification } from '../utils/notification';
 
@@ -27,11 +30,35 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [tgChatId, setTgChatId] = useState('');
   const [minSpreadPct, setMinSpreadPct] = useState('1.0');
 
-  // Interactive feedback
+  // Interactive feedback & Bot Info
+  const [botInfo, setBotInfo] = useState<{ id?: number; username?: string; first_name?: string } | null>(null);
+  const [detectingChatId, setDetectingChatId] = useState(false);
   const [tgTesting, setTgTesting] = useState(false);
   const [tgTestResult, setTgTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [webTestNotice, setWebTestNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const checkBotInfo = async (token: string) => {
+    if (!token || !token.includes(':')) {
+      setBotInfo(null);
+      return;
+    }
+    try {
+      const res = await fetch('/api/notifications/get-bot-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botToken: token.trim() }),
+      });
+      const data = await res.json();
+      if (data.ok && data.bot) {
+        setBotInfo(data.bot);
+      } else {
+        setBotInfo(null);
+      }
+    } catch {
+      setBotInfo(null);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,10 +79,14 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             setWebEnabled(s.notifications.web?.enabled !== false);
             setWebSound(s.notifications.web?.sound !== false);
             setTgEnabled(!!s.notifications.telegram?.enabled);
-            setTgBotToken(s.notifications.telegram?.botToken || '');
+            const token = s.notifications.telegram?.botToken || '';
+            setTgBotToken(token);
             setTgChatId(s.notifications.telegram?.chatId || '');
             if (s.notifications.minSpreadPct !== undefined) {
               setMinSpreadPct(String(s.notifications.minSpreadPct));
+            }
+            if (token) {
+              checkBotInfo(token);
             }
           }
         }
@@ -93,6 +124,37 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setWebTestNotice('ℹ️ 桌面通知尚未授权，已播放测试提示音');
     }
     setTimeout(() => setWebTestNotice(null), 5000);
+  };
+
+  const handleDetectChatId = async () => {
+    setDetectingChatId(true);
+    setTgTestResult(null);
+    try {
+      const res = await fetch('/api/notifications/get-chat-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botToken: tgBotToken.trim() }),
+      });
+      const data = await res.json();
+      if (data.bot) setBotInfo(data.bot);
+
+      if (data.ok && data.chatId) {
+        setTgChatId(data.chatId);
+        setTgTestResult({
+          ok: true,
+          message: `✅ 成功捕获您的 Chat ID: ${data.chatId} (${data.chatName || '个人会话'})！已自动填入下方。`,
+        });
+      } else {
+        setTgTestResult({
+          ok: false,
+          message: data.error || '未能检测到消息。请确认已向机器人发送过 /start。',
+        });
+      }
+    } catch (e: any) {
+      setTgTestResult({ ok: false, message: `获取失败: ${e.message}` });
+    } finally {
+      setDetectingChatId(false);
+    }
   };
 
   const handleTestTelegram = async () => {
@@ -366,20 +428,48 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="pt-3 space-y-3">
+                  {/* 识别到的机器人状态卡片 */}
+                  {botInfo && (
+                    <div className="flex items-center justify-between p-2.5 rounded bg-sky-950/40 border border-sky-500/30 text-sky-200 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>机器人已成功识别: <b>{botInfo.first_name || 'Bot'}</b> (@{botInfo.username})</span>
+                      </div>
+                      {botInfo.username && (
+                        <a
+                          href={`https://t.me/${botInfo.username}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 text-sky-400 hover:text-sky-300 underline font-medium"
+                        >
+                          <span>打开并 Start</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[var(--text-secondary)] font-medium">
                         {tr('setNotifTgBotToken')}
                       </span>
-                      <span className="text-[10px] text-[var(--text-muted)]">由 @BotFather 获取</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">由 @BotFather 获取完整 Token</span>
                     </div>
                     <input
                       type="password"
                       value={tgBotToken}
-                      onChange={(e) => setTgBotToken(e.target.value)}
-                      placeholder={tr('setNotifTgBotTokenPh')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTgBotToken(val);
+                        if (val.includes(':')) checkBotInfo(val);
+                      }}
+                      placeholder="例如 8750497694:AAEUstjcXPve..."
                       className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded px-3 py-1.5 font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-sky-500"
                     />
+                    <div className="text-[10px] text-[var(--text-muted)] mt-1">
+                      ⚠️ 提示：Token 必须包含冒号前的数字 ID（如 <code>8750497694:AAEU...</code>），请勿只填冒号后半截。
+                    </div>
                   </div>
 
                   <div>
@@ -387,15 +477,27 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       <span className="text-[var(--text-secondary)] font-medium">
                         {tr('setNotifTgChatId')}
                       </span>
-                      <span className="text-[10px] text-[var(--text-muted)]">由 @userinfobot 获取个人或群组 ID</span>
+                      <button
+                        type="button"
+                        onClick={handleDetectChatId}
+                        disabled={detectingChatId || !tgBotToken.trim()}
+                        className="text-[11px] text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="在 Telegram 中向机器人发送 /start 后点击此按钮自动获取"
+                      >
+                        <RefreshCw size={11} className={detectingChatId ? 'animate-spin' : ''} />
+                        <span>{detectingChatId ? '正在检测...' : '⚡ 自动获取 Chat ID'}</span>
+                      </button>
                     </div>
                     <input
                       type="text"
                       value={tgChatId}
                       onChange={(e) => setTgChatId(e.target.value)}
-                      placeholder={tr('setNotifTgChatIdPh')}
+                      placeholder="例如 123456789 (您的个人 Telegram 数字 ID)"
                       className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded px-3 py-1.5 font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-sky-500"
                     />
+                    <div className="text-[10px] text-[var(--text-muted)] mt-1">
+                      说明：Chat ID 是<b>您本人</b>的账户数字 ID，不能填机器人的数字 ID。先在 Telegram 向机器人发送 <code>/start</code>，然后点击上方「⚡ 自动获取 Chat ID」即可一键识别。
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
