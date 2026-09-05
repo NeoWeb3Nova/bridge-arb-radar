@@ -325,12 +325,36 @@ export const App: React.FC = () => {
                 <div className="text-[10px] text-[var(--text-muted)] mt-1">{tr('mOppsSub')}</div>
               </div>
 
-              <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mDecisions')}</div>
+              <div
+                className="terminal-panel p-4 cursor-pointer hover:border-[#45c4b0]/40 transition group"
+                onClick={() => setTab('decisions')}
+                title={`已人工决策标的：${state?.counts.decisions || 0} 个，累计已记操盘日志：${state?.counts.decisionLogs || 0} 条，已实现盈亏：${(state?.counts.realizedPnlUsd || 0) >= 0 ? '+' : ''}${(state?.counts.realizedPnlUsd || 0).toFixed(2)} USD`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight">{tr('mDecisions')}</div>
+                  {(state?.counts.decisions || 0) > 0 && (
+                    <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-[#45c4b0]/15 text-[#45c4b0] border border-[#45c4b0]/30 rounded">
+                      {state?.counts.decisions} {tr('mDecisionsUnit')}
+                    </span>
+                  )}
+                </div>
                 <div className="font-mono-num text-2xl font-bold text-[#45c4b0]">
                   {state?.counts.decisions || '0'}
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-1">{tr('mDecisionsSub')}</div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-1 flex items-center justify-between">
+                  <span>
+                    {(state?.counts.decisionLogs || 0) > 0
+                      ? `${tr('mDecisionsSub')} ${state?.counts.decisionLogs} 条`
+                      : (state?.counts.decisions || 0) > 0
+                      ? `${state?.counts.decisions} 个标的跟踪中`
+                      : tr('mDecisionsEmpty')}
+                  </span>
+                  {(state?.counts.realizedPnlUsd || 0) !== 0 && (
+                    <span className={`font-mono font-bold ${(state?.counts.realizedPnlUsd || 0) >= 0 ? 'text-[#45c4b0]' : 'text-[#e65138]'}`}>
+                      {(state?.counts.realizedPnlUsd || 0) >= 0 ? '+' : ''}${(state?.counts.realizedPnlUsd || 0).toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

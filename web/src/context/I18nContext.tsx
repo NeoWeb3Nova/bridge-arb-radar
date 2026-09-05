@@ -33,7 +33,9 @@ const DICT = {
     mOpps: '实时价差机会',
     mOppsSub: '已排除单边流动性不足',
     mDecisions: '人工决策跟踪',
-    mDecisionsSub: '已记真实盈亏日志',
+    mDecisionsSub: '已记操盘日志',
+    mDecisionsEmpty: '已记 0 条盈亏日志',
+    mDecisionsUnit: '个标的',
     // Dash sections
     realtimeOpps: '实时高优跨链套利机会',
     officialAnchor: '官方注册表锚定',
@@ -278,7 +280,9 @@ const DICT = {
     mOpps: 'Live Spread Opps',
     mOppsSub: 'Filtered by liquidity',
     mDecisions: 'Decisions Logged',
-    mDecisionsSub: 'With PnL ledger',
+    mDecisionsSub: 'PnL Logs',
+    mDecisionsEmpty: '0 PnL logs recorded',
+    mDecisionsUnit: 'targets',
     // Dash sections
     realtimeOpps: 'High-Conviction Cross-Chain Arb Routes',
     officialAnchor: 'Official Registry Anchors',

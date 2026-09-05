@@ -224,6 +224,8 @@ export interface AppState {
     decisions: number;
     transfers24h: number;
     maxTransfers?: number;
+    decisionLogs?: number;
+    realizedPnlUsd?: number;
   };
   scanning: boolean;
   lastScanAt: string | null;

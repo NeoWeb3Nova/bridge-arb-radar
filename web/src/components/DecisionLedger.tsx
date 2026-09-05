@@ -13,6 +13,7 @@ export const DecisionLedger: React.FC = () => {
   const { t: tr } = useI18n();
   const [items, setItems] = useState<OpportunityItem[]>([]);
   const [pnl, setPnl] = useState(0);
+  const [byStatus, setByStatus] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedItem, setSelectedItem] = useState<OpportunityItem | null>(null);
@@ -26,6 +27,7 @@ export const DecisionLedger: React.FC = () => {
       if (data.ok) {
         setItems(data.items || []);
         setPnl(data.realizedPnlUsd || 0);
+        if (data.byStatus) setByStatus(data.byStatus);
       }
     } catch (e) {
       console.error(e);
@@ -110,17 +112,26 @@ export const DecisionLedger: React.FC = () => {
             </div>
           </div>
 
+          <div className="text-right border-l border-[var(--border-subtle)] pl-4">
+            <div className="text-[11px] text-[var(--text-secondary)] mb-0.5">已人工决策</div>
+            <div className="font-mono-num text-2xl font-extrabold text-[#45c4b0]">
+              {byStatus.marked || 0}
+            </div>
+          </div>
+
           <div className="border-l border-[var(--border-subtle)] pl-4">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042] transition"
+              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042] transition cursor-pointer"
             >
-              <option value="all">{tr('decFilterAll')}</option>
-              <option value="watching">{tr('decFilterWatching')}</option>
-              <option value="executed">{tr('decFilterExecuted')}</option>
-              <option value="closed">{tr('decFilterClosed')}</option>
-              <option value="dropped">{tr('decFilterDropped')}</option>
+              <option value="all">{tr('decFilterAll')} ({items.length})</option>
+              <option value="marked">仅看已决策 ({byStatus.marked || 0})</option>
+              <option value="watching">{tr('decFilterWatching')} ({byStatus.watching || 0})</option>
+              <option value="executed">{tr('decFilterExecuted')} ({byStatus.executed || 0})</option>
+              <option value="closed">{tr('decFilterClosed')} ({byStatus.closed || 0})</option>
+              <option value="dropped">{tr('decFilterDropped')} ({byStatus.dropped || 0})</option>
+              <option value="unmarked">待人工裁决 ({byStatus.unmarked || 0})</option>
             </select>
           </div>
         </div>
