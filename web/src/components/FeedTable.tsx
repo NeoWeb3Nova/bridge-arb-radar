@@ -1,34 +1,60 @@
 import React, { useEffect, useState } from 'react';
 import { TransferItem } from '../types';
 import { short, usd, ago } from '../utils/format';
-import { ArrowRight, ExternalLink, Search, RefreshCw, Check, Copy } from 'lucide-react';
+import { ArrowRight, ExternalLink, Search, RefreshCw, Check, Copy, Play } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 
 export const FeedTable: React.FC = () => {
   const { t: tr } = useI18n();
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
+  const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [justRefreshed, setJustRefreshed] = useState(false);
   const [search, setSearch] = useState('');
   const [minUsd, setMinUsd] = useState('');
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (isManual = false) => {
     setLoading(true);
+    const start = Date.now();
     try {
       const p = new URLSearchParams();
-      if (search) p.append('q', search);
-      if (minUsd) p.append('minUsd', minUsd);
+      if (search.trim()) p.append('q', search.trim());
+      if (minUsd.trim()) p.append('minUsd', minUsd.trim());
       p.append('limit', '100');
 
       const res = await fetch(`/api/transfers?${p.toString()}`);
       const data = await res.json();
       if (data.ok) {
         setTransfers(data.items || []);
+        if (data.total !== undefined) setTotal(data.total);
+      }
+      if (isManual) {
+        // 保证平滑可感知的旋转反馈，避免 1ms 瞬间完成导致视觉上无感知
+        const elapsed = Date.now() - start;
+        if (elapsed < 400) {
+          await new Promise((r) => setTimeout(r, 400 - elapsed));
+        }
+        setJustRefreshed(true);
+        setTimeout(() => setJustRefreshed(false), 2000);
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScanAndFetch = async () => {
+    setScanning(true);
+    try {
+      await fetch('/api/scan', { method: 'POST' });
+      await loadData(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setScanning(false);
     }
   };
 
@@ -54,7 +80,7 @@ export const FeedTable: React.FC = () => {
               placeholder={tr('feedSearchPh')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && loadData()}
+              onKeyDown={(e) => e.key === 'Enter' && loadData(true)}
               className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md pl-8 pr-3 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042] transition"
             />
           </div>
@@ -64,19 +90,55 @@ export const FeedTable: React.FC = () => {
               placeholder={tr('minUsdPh')}
               value={minUsd}
               onChange={(e) => setMinUsd(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && loadData(true)}
               className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042] transition font-mono-num"
             />
           </div>
         </div>
 
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-          <span>{loading ? tr('searching') : tr('refreshFeed')}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {total > 0 && (
+            <span className="text-[11px] text-[var(--text-muted)] font-mono hidden md:inline mr-1">
+              {tr('feedTotalCount')}: <b className="text-[var(--text-primary)]">{total.toLocaleString()}</b> 条
+            </span>
+          )}
+
+          {/* 刷新本地流水 */}
+          <button
+            onClick={() => loadData(true)}
+            disabled={loading || scanning}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer disabled:opacity-50 ${
+              justRefreshed
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)]'
+            }`}
+            title="从本地数据库重新载入符合筛选条件的流水记录"
+          >
+            {justRefreshed ? (
+              <Check size={12} className="text-emerald-400" />
+            ) : (
+              <RefreshCw size={12} className={loading ? 'animate-spin text-[#f5c042]' : ''} />
+            )}
+            <span>
+              {loading
+                ? tr('searching')
+                : justRefreshed
+                ? `${tr('feedRefreshed')} (${total})`
+                : tr('refreshFeed')}
+            </span>
+          </button>
+
+          {/* 抓取全网最新跨链流水 */}
+          <button
+            onClick={handleScanAndFetch}
+            disabled={scanning || loading}
+            className="impeccable-btn-primary flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold tracking-tight transition cursor-pointer disabled:opacity-50"
+            title="立即并发请求各大跨链桥远程节点抓取全网最新转账并更新此列表"
+          >
+            <Play size={11} className={scanning ? 'animate-spin' : 'fill-current'} />
+            <span>{scanning ? tr('feedScanning') : tr('feedScanBtn')}</span>
+          </button>
+        </div>
       </div>
 
       {/* 数据表格 */}
@@ -121,13 +183,15 @@ export const FeedTable: React.FC = () => {
                     <td className="py-2 px-3 font-bold text-[var(--text-primary)]">{t.tokenSymbol || '—'}</td>
                     <td className="py-2 px-3 text-right font-extrabold text-[var(--text-primary)]">{usd(t.amountUsd)}</td>
                     <td className="py-2 px-3 font-mono text-[var(--text-muted)] text-[11px]">
-                      <span className="cursor-pointer hover:text-[var(--text-primary)]" onClick={() => t.sender && handleCopy(t.sender)}>
+                      <span className="cursor-pointer hover:text-[var(--text-primary)] flex items-center gap-1" onClick={() => t.sender && handleCopy(t.sender)}>
                         {short(t.sender, 5)}
+                        {copiedHash === t.sender && <Check size={10} className="text-emerald-400" />}
                       </span>
                     </td>
                     <td className="py-2 px-3 font-mono text-[var(--text-muted)] text-[11px]">
-                      <span className="cursor-pointer hover:text-[var(--text-primary)]" onClick={() => t.receiver && handleCopy(t.receiver)}>
+                      <span className="cursor-pointer hover:text-[var(--text-primary)] flex items-center gap-1" onClick={() => t.receiver && handleCopy(t.receiver)}>
                         {short(t.receiver, 5)}
+                        {copiedHash === t.receiver && <Check size={10} className="text-emerald-400" />}
                       </span>
                     </td>
                     <td className="py-2 px-3 text-center">
