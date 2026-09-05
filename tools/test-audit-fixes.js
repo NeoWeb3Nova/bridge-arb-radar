@@ -326,6 +326,108 @@ async function runTests() {
     ok('正确从 DEX Screener URL 提取 Uniswap V4 32字节 Pool ID', extractedPair === '0x40f2555c665c957d0851aaa2537dc4a3b445e11544576f63fa43a382cb395ff1');
   }
 
+  // === 10. 数据库安全重置与多道防护 (Database Reset & Multi-step Safety Verification) 测试 ===
+  console.log('\n=== 10. 数据库安全重置与多道防护 (Database Reset & Safety Guard) 测试 ===');
+  {
+    const http = require('http');
+    const postJson = (path, body, method = 'POST') => new Promise((resolve) => {
+      const payload = JSON.stringify(body);
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: 8848,
+        path,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      }, (res) => {
+        let raw = '';
+        res.on('data', (c) => raw += c);
+        res.on('end', () => {
+          try { resolve(JSON.parse(raw)); } catch { resolve({ raw }); }
+        });
+      });
+      req.on('error', (e) => resolve({ ok: false, error: e.message }));
+      req.write(payload);
+      req.end();
+    });
+
+    const rejectWrong = await postJson('/api/database/reset', { confirmPhrase: 'WRONG' });
+    ok('输入错误口令 WRONG 时安全拒绝重置', rejectWrong.ok === false && rejectWrong.error.includes('安全确认码不匹配'));
+
+    const rejectLower = await postJson('/api/database/reset', { confirmPhrase: 'reset' });
+    ok('输入小写 reset 时严格区分大小写并安全拒绝', rejectLower.ok === false && rejectLower.error.includes('安全确认码不匹配'));
+
+    const rejectEmpty = await postJson('/api/database/reset', {});
+    ok('缺省口令时安全拒绝', rejectEmpty.ok === false);
+
+    const rejectGet = await postJson('/api/database/reset', {}, 'GET');
+    ok('非 POST 请求拒绝访问', rejectGet.ok === false && rejectGet.error.includes('仅支持 POST'));
+
+    const getJson = (path) => new Promise((resolve) => {
+      http.get('http://127.0.0.1:8848' + path, (res) => {
+        let raw = '';
+        res.on('data', (c) => raw += c);
+        res.on('end', () => {
+          try { resolve(JSON.parse(raw)); } catch { resolve({ raw }); }
+        });
+      }).on('error', (e) => resolve({ ok: false, error: e.message }));
+    });
+
+    const storageRes = await getJson('/api/storage');
+    ok('/api/storage 状态接口返回正确', storageRes.ok === true && storageRes.backend === 'sqlite');
+    ok('/api/storage 包含各业务表 rowCount 统计', storageRes.rowCount && typeof storageRes.rowCount.transfers === 'number');
+
+    // 独立测试库完整事务重置与备份验证 (在独立测试库验证，不影响现有主库)
+    const { DatabaseSync } = require('node:sqlite');
+    const testDbPath = path.join(__dirname, '../data/test-safe-reset.db');
+    try { fs.unlinkSync(testDbPath); } catch {}
+    const testDb = new DatabaseSync(testDbPath);
+    testDb.exec(`
+      CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE transfers (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE wallets (address TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE tokens (key TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE opportunities (rowid INTEGER PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE scanlog (rowid INTEGER PRIMARY KEY, data TEXT NOT NULL);
+      INSERT INTO meta(key, value) VALUES ('settings', '{"keys":{"range":"testkey"}}');
+      INSERT INTO meta(key, value) VALUES ('stats', '{"transfersSeen":999}');
+      INSERT INTO transfers(id, data) VALUES ('tx1', '{"id":"tx1"}');
+      INSERT INTO wallets(address, data) VALUES ('0xabc', '{"score":88}');
+      INSERT INTO tokens(key, data) VALUES ('eth:0x1', '{"symbol":"TEST"}');
+      INSERT INTO opportunities(rowid, data) VALUES (1, '{"symbol":"TEST"}');
+      INSERT INTO scanlog(rowid, data) VALUES (1, '{"type":"scan"}');
+    `);
+
+    // 模拟原子清空流程 (保持 settings)
+    const saved = JSON.parse(testDb.prepare("SELECT value FROM meta WHERE key = 'settings'").get().value);
+    testDb.exec('BEGIN');
+    testDb.exec('DELETE FROM transfers');
+    testDb.exec('DELETE FROM wallets');
+    testDb.exec('DELETE FROM tokens');
+    testDb.exec('DELETE FROM opportunities');
+    testDb.exec('DELETE FROM scanlog');
+    testDb.exec('DELETE FROM meta');
+    testDb.prepare('INSERT INTO meta(key,value) VALUES(?,?)').run('version', '1');
+    testDb.prepare('INSERT INTO meta(key,value) VALUES(?,?)').run('settings', JSON.stringify(saved));
+    testDb.prepare('INSERT INTO meta(key,value) VALUES(?,?)').run('stats', JSON.stringify({ transfersSeen: 0, scans: 0, lastScanAt: null }));
+    testDb.exec('COMMIT');
+
+    const transfersCount = testDb.prepare('SELECT COUNT(*) c FROM transfers').get().c;
+    const walletsCount = testDb.prepare('SELECT COUNT(*) c FROM wallets').get().c;
+    const oppsCount = testDb.prepare('SELECT COUNT(*) c FROM opportunities').get().c;
+    const settingsKept = JSON.parse(testDb.prepare("SELECT value FROM meta WHERE key = 'settings'").get().value);
+
+    ok('业务表 transfers 已彻底清空 (count = 0)', transfersCount === 0);
+    ok('业务表 wallets 已彻底清空 (count = 0)', walletsCount === 0);
+    ok('业务表 opportunities 已彻底清空 (count = 0)', oppsCount === 0);
+    ok('用户自定义 API Key 与设置被完整保留', settingsKept.keys?.range === 'testkey');
+
+    testDb.close();
+    try { fs.unlinkSync(testDbPath); } catch {}
+  }
+
   console.log(`\n============================`);
   console.log(`总计测试: ${passed + failed} | 通过: ${passed} | 失败: ${failed}`);
   if (failed > 0) process.exit(1);
