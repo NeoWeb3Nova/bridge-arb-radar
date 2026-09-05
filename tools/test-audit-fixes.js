@@ -298,6 +298,34 @@ async function runTests() {
     ok('排除粉尘池后价差为真实健康价差 (约 2.6%) 而非虚假 63%', bestDustFiltered.spreadPct < 5);
   }
 
+  // === 9. 流动性池手续费 (DEX Pool Swap Fee) 与高费陷阱池 (Trap Pool) 测试 ===
+  {
+    console.log(`\n=== 9. 流动性池手续费与高费陷阱池 (Trap Pool / Uniswap V4 10%池) 测试 ===`);
+    const oppWithTrap = {
+      symbol: 'PEAQ',
+      buyChain: 'ethereum',
+      buyPrice: 1.00,
+      sellChain: 'base',
+      sellPrice: 1.08, // 8% nominal spread
+      spreadPct: 8.0,
+      minLiquidityUsd: 50000,
+      quoteReserveUsd: 25000,
+      buyVolume24h: 10000,
+      poolFeeTrap: true, // 10% fee trap pool (e.g. Uniswap V4 PEAQ/USDT)
+      buyPoolFee: 0.10,
+    };
+
+    const scored = ArbDetector.calculateOpportunityScore(oppWithTrap);
+    ok('高费陷阱池评级归入 D 级', scored.qualityGrade === 'D');
+    ok('高费陷阱池评分极低 (<= 25分)', scored.qualityScore <= 25);
+    ok('高费陷阱池评语明确警告高费率陷阱', scored.scoreComment.includes('高费率陷阱') || scored.scoreComment.includes('10.0%'));
+
+    // 测试 pair 地址提取
+    const testUrl = 'https://dexscreener.com/ethereum/0x40f2555c665c957d0851aaa2537dc4a3b445e11544576f63fa43a382cb395ff1';
+    const extractedPair = securityChecker.extractPairFromUrl(testUrl);
+    ok('正确从 DEX Screener URL 提取 Uniswap V4 32字节 Pool ID', extractedPair === '0x40f2555c665c957d0851aaa2537dc4a3b445e11544576f63fa43a382cb395ff1');
+  }
+
   console.log(`\n============================`);
   console.log(`总计测试: ${passed + failed} | 通过: ${passed} | 失败: ${failed}`);
   if (failed > 0) process.exit(1);

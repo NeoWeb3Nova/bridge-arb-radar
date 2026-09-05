@@ -60,6 +60,13 @@ export interface OpportunityItem {
   sellQuoteReserveUsd?: number;
   sellQuoteSymbol?: string | null;
   sellQuoteRatio?: number;
+  buyPairAddress?: string | null;
+  sellPairAddress?: string | null;
+  buyPoolFee?: number | null;
+  sellPoolFee?: number | null;
+  buyPoolType?: string | null;
+  sellPoolType?: string | null;
+  poolFeeTrap?: boolean;
   poolSkewed?: boolean;
   isSymbolCollision?: boolean;
   collisionRisk?: boolean;
@@ -97,8 +104,18 @@ export interface LiveQuoteResult {
     buyPrice: number;
     sellPrice: number;
     spreadPct: number;
+    tokenAmount?: number;
     buyDex?: string;
     sellDex?: string;
+    buyPairAddress?: string | null;
+    sellPairAddress?: string | null;
+    buyPoolFee?: number | null;
+    sellPoolFee?: number | null;
+    buyPoolType?: string | null;
+    sellPoolType?: string | null;
+    buyTax?: number;
+    sellTax?: number;
+    isTrapPool?: boolean;
     buyLiquidityUsd?: number;
     sellLiquidityUsd?: number;
     buyVolume24h?: number;
@@ -123,11 +140,16 @@ export interface LiveQuoteResult {
   simulation: {
     principalUsd: number;
     grossProfitUsd: number;
+    bridgeCostUsd?: number;
+    dexFrictionCostUsd?: number;
+    buyFrictionUsd?: number;
+    sellFrictionUsd?: number;
     totalCostUsd: number;
     netProfitUsd: number;
     netYieldPct: number;
+    isTrapPool?: boolean;
   } | null;
-  status: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'UNAVAILABLE';
+  status: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'TRAP_POOL' | 'UNAVAILABLE';
   statusMessage: string;
   checkedAt: string;
 }
@@ -137,6 +159,12 @@ export interface TokenSecurityDetail {
   isHoneypot: boolean;
   buyTax: number;
   sellTax: number;
+  poolFee?: number | null;
+  poolFeePct?: number | null;
+  poolType?: string | null;
+  isTrapPool?: boolean;
+  isHighFeePool?: boolean;
+  trapPoolsCount?: number;
   cannotSellAll?: boolean;
   isOpenSource?: boolean;
   isBlacklisted?: boolean;
@@ -153,6 +181,7 @@ export interface SecurityCheckResult {
   safe: boolean;
   hasRisk: boolean;
   isHoneypot: boolean;
+  isTrapPool?: boolean;
   riskLevel: 'safe' | 'warning' | 'danger';
   riskReason?: string;
   buySecurity?: TokenSecurityDetail | null;

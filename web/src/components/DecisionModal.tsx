@@ -38,8 +38,10 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
         symbol: item.symbol,
         buyChain: item.buyChain,
         buyAddress: item.buyAddress || '',
+        buyPairAddress: item.buyPairAddress || '',
         sellChain: item.sellChain,
         sellAddress: item.sellAddress || '',
+        sellPairAddress: item.sellPairAddress || '',
         snapshotBuyPrice: String(item.buyPrice || ''),
         snapshotSellPrice: String(item.sellPrice || ''),
         snapshotSpreadPct: String(item.spreadPct || ''),
@@ -222,6 +224,23 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
         <div className="p-4 overflow-y-auto space-y-4 text-xs">
 
           {/* 1. 实时时效性与风控预警横幅 */}
+          {quoteStatus === 'TRAP_POOL' && (
+            <div className="p-3.5 rounded-lg bg-rose-500/15 border border-rose-500/50 text-rose-200 flex items-start gap-2.5 animate-pulse">
+              <AlertTriangle size={18} className="text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-1 grow">
+                <div className="font-bold text-xs text-rose-300 flex items-center justify-between">
+                  <span>🚨 严重风险拦截：检测到高额手续费陷阱流动性池 (Trap Pool / 杀猪盘)</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-600/40 text-rose-100 font-extrabold border border-rose-400/60">
+                    池费高达 {Math.max((live?.buyPoolFee || 0), (live?.sellPoolFee || 0), (item.buyPoolFee || 0), (item.sellPoolFee || 0)) * 100}%
+                  </span>
+                </div>
+                <div className="text-[11px] text-rose-200/90 leading-relaxed">
+                  {liveQuote?.statusMessage || `DEX Screener 等行情软件未直接标示此 Uniswap V4 / 陷阱池的高额兑换手续费。虽然代币合约显示 0% 税，但单次兑换池子即扣除巨额手续费，表面毛利差实为诱饵陷阱，实际执行必亏！`}
+                </div>
+              </div>
+            </div>
+          )}
+
           {quoteStatus === 'ACTIVE' && (
             <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-start gap-2.5">
               <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
@@ -330,9 +349,24 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[var(--border-subtle)]/60 flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono">
-                  <span>快照价: {usd(item.buyPrice)}</span>
-                  <span>池深: {usdCompact(live?.buyLiquidityUsd || item.minLiquidityUsd)}</span>
+                <div className="pt-2 border-t border-[var(--border-subtle)]/60 space-y-1 text-[10px] text-[var(--text-muted)] font-mono">
+                  <div className="flex items-center justify-between">
+                    <span>快照价: {usd(item.buyPrice)}</span>
+                    <span>池深: {usdCompact(live?.buyLiquidityUsd || item.minLiquidityUsd)}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-0.5 border-t border-[var(--border-subtle)]/30">
+                    <span>流动性池手续费:</span>
+                    <span className={`font-bold ${(live?.buyPoolFee || item.buyPoolFee || 0) >= 0.05 ? 'text-rose-400 animate-pulse' : ((live?.buyPoolFee || item.buyPoolFee || 0) > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                      {(((live?.buyPoolFee ?? item.buyPoolFee) ?? 0.003) * 100).toFixed(1)}%
+                      {(live?.buyPoolFee || item.buyPoolFee || 0) >= 0.05 ? ' 🚨陷阱池' : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>代币合约交易税:</span>
+                    <span className={(live?.buyTax || 0) > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+                      {((live?.buyTax || 0) * 100).toFixed(1)}% (买入税)
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -379,9 +413,24 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[var(--border-subtle)]/60 flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono">
-                  <span>快照价: {usd(item.sellPrice)}</span>
-                  <span>池深: {usdCompact(live?.sellLiquidityUsd || item.minLiquidityUsd)}</span>
+                <div className="pt-2 border-t border-[var(--border-subtle)]/60 space-y-1 text-[10px] text-[var(--text-muted)] font-mono">
+                  <div className="flex items-center justify-between">
+                    <span>快照价: {usd(item.sellPrice)}</span>
+                    <span>池深: {usdCompact(live?.sellLiquidityUsd || item.minLiquidityUsd)}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-0.5 border-t border-[var(--border-subtle)]/30">
+                    <span>流动性池手续费:</span>
+                    <span className={`font-bold ${(live?.sellPoolFee || item.sellPoolFee || 0) >= 0.05 ? 'text-rose-400 animate-pulse' : ((live?.sellPoolFee || item.sellPoolFee || 0) > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                      {(((live?.sellPoolFee ?? item.sellPoolFee) ?? 0.003) * 100).toFixed(1)}%
+                      {(live?.sellPoolFee || item.sellPoolFee || 0) >= 0.05 ? ' 🚨陷阱池' : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>代币合约交易税:</span>
+                    <span className={(live?.sellTax || 0) > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+                      {((live?.sellTax || 0) * 100).toFixed(1)}% (卖出税)
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -449,6 +498,39 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
               </div>
             </div>
 
+            {/* 全链路费用摩擦拆解：跨链成本 vs DEX池费 vs 代币合约税 */}
+            <div className="p-2.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono">
+              <div className="flex items-center justify-between text-[var(--text-secondary)] font-sans font-semibold">
+                <span>摩擦成本构成明细:</span>
+                <span className="text-[var(--text-muted)] text-[10px] font-mono">总损耗: -{usd(sim?.totalCostUsd || bridge?.totalCostUsd || 4.5)}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-[var(--border-subtle)]/50 text-[10px]">
+                <div className="bg-[var(--bg-base)]/70 p-1.5 rounded">
+                  <div className="text-[var(--text-muted)]">跨链通道费 (Gas+桥):</div>
+                  <div className="text-[var(--text-primary)] font-bold mt-0.5">
+                    -{usd(sim?.bridgeCostUsd || bridge?.totalCostUsd || 4.5)}
+                  </div>
+                </div>
+                <div className="bg-[var(--bg-base)]/70 p-1.5 rounded">
+                  <div className="text-[var(--text-muted)] flex items-center justify-between">
+                    <span>DEX流动性池手续费:</span>
+                    {sim?.isTrapPool && (
+                      <span className="text-[8px] bg-rose-500/20 text-rose-300 px-1 rounded">高费陷阱</span>
+                    )}
+                  </div>
+                  <div className={`font-bold mt-0.5 ${sim?.isTrapPool ? 'text-rose-400 font-extrabold' : 'text-[var(--text-primary)]'}`}>
+                    -{usd(sim?.dexFrictionCostUsd || 0)}
+                  </div>
+                </div>
+                <div className="bg-[var(--bg-base)]/70 p-1.5 rounded">
+                  <div className="text-[var(--text-muted)]">代币合约交易税:</div>
+                  <div className={`font-bold mt-0.5 ${((live?.buyTax || 0) + (live?.sellTax || 0)) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {((live?.buyTax || 0) + (live?.sellTax || 0)) > 0 ? `-${usd(((live?.buyTax || 0) + (live?.sellTax || 0)) * principalUsd)}` : '$0.00 (0%税)'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {bridge && (
               <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono px-1">
                 <span>直连路由: {bridge.bridgeName} ({bridge.isLiveQuote ? '实时 Gas & 协议费已锁定' : '通道测算'})</span>
@@ -457,7 +539,52 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
             )}
           </div>
 
-          {/* 4. 决策操盘状态与复盘日志 */}
+          {/* 4. 代币税 vs 交易池手续费 双重风控透视卡片 */}
+          <div className="p-3 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-sky-400" />
+                <span>双重风控审计：代币合约税 (Token Tax) vs 交易池手续费 (Pool Swap Fee)</span>
+              </div>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">GoPlus & GeckoTerminal 双核验</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+              <div className="p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)]/60 space-y-1">
+                <div className="flex justify-between items-center text-[var(--text-secondary)] font-sans font-semibold">
+                  <span>① 代币智能合约税 (Token Tax):</span>
+                  <span className={((live?.buyTax || 0) === 0 && (live?.sellTax || 0) === 0) ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
+                    {((live?.buyTax || 0) === 0 && (live?.sellTax || 0) === 0) ? '0% 无税 ✓' : `买${((live?.buyTax || 0)*100).toFixed(1)}% / 卖${((live?.sellTax || 0)*100).toFixed(1)}%`}
+                  </span>
+                </div>
+                <div className="text-[10px] text-[var(--text-muted)] font-sans leading-relaxed">
+                  由代币智能合约代码规定。在代币发生转账或兑换时由代币合约扣留，非貔貅且 0% 买卖税表示代币合约层无恶意扣税。
+                </div>
+              </div>
+
+              <div className={`p-2 rounded border space-y-1 ${
+                ((live?.buyPoolFee || item.buyPoolFee || 0) >= 0.05 || (live?.sellPoolFee || item.sellPoolFee || 0) >= 0.05)
+                  ? 'bg-rose-500/10 border-rose-500/30'
+                  : 'bg-[var(--bg-base)] border-[var(--border-subtle)]/60'
+              }`}>
+                <div className="flex justify-between items-center text-[var(--text-secondary)] font-sans font-semibold">
+                  <span>② DEX 流动性池手续费 (Pool Swap Fee):</span>
+                  <span className={`font-bold ${
+                    ((live?.buyPoolFee || item.buyPoolFee || 0) >= 0.05 || (live?.sellPoolFee || item.sellPoolFee || 0) >= 0.05)
+                      ? 'text-rose-400 animate-pulse'
+                      : 'text-emerald-400'
+                  }`}>
+                    买入 {(((live?.buyPoolFee ?? item.buyPoolFee) ?? 0.003) * 100).toFixed(1)}% / 卖出 {(((live?.sellPoolFee ?? item.sellPoolFee) ?? 0.003) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-[10px] text-[var(--text-muted)] font-sans leading-relaxed">
+                  由 DEX 流动性池（如 Uniswap V4 / Hook 池）规定。<strong>注意：DEX Screener 默认不展示此费率</strong>，如果池子创建者设置 10% 或更高手续费，利差将被完全吞噬。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. 决策操盘状态与复盘日志 */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
               <span className="font-bold text-[var(--text-primary)] text-xs">执行状态与操盘日志记录</span>

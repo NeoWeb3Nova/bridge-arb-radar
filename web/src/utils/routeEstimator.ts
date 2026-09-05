@@ -7,6 +7,15 @@ export interface LiveTokenData {
   tokenAmount?: number;
   buyDex?: string;
   sellDex?: string;
+  buyPairAddress?: string | null;
+  sellPairAddress?: string | null;
+  buyPoolFee?: number | null;
+  sellPoolFee?: number | null;
+  buyPoolType?: string | null;
+  sellPoolType?: string | null;
+  buyTax?: number;
+  sellTax?: number;
+  isTrapPool?: boolean;
   buyLiquidityUsd?: number;
   sellLiquidityUsd?: number;
   buyVolume24h?: number;
@@ -34,7 +43,7 @@ export interface LiveQuoteData {
     sellPriceDeltaPct: number;
     spreadDeltaPct: number;
   };
-  status?: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'UNAVAILABLE';
+  status?: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'TRAP_POOL' | 'UNAVAILABLE';
   statusMessage?: string;
   ttlSeconds?: number;
   updatedAt?: number;
@@ -66,6 +75,13 @@ export interface ArbNetCalculation {
   estGasUsd: number;
   estBridgeFeeUsd: number;
   estSlippageUsd: number;
+  estDexSwapFeesUsd: number;      // 买卖双端 DEX 池子手续费 (USD)
+  estTokenTaxUsd: number;         // 代币合约交易税 (USD)
+  buyPoolFeeRate: number;         // 买入端池手续费率
+  sellPoolFeeRate: number;        // 卖出端池手续费率
+  buyTokenTaxRate: number;        // 代币买入税率
+  sellTokenTaxRate: number;       // 代币卖出税率
+  isTrapPool: boolean;            // 是否为高费率陷阱池 (>= 5%)
   estTotalCostUsd: number;
   netProfitUsd: number;
   netRoiPct: number;
@@ -196,7 +212,11 @@ export function calculateNetArb(
   liveQuote?: LiveQuoteData | null,
   sellQuoteReserveUsd?: number,
   buyBaseReserveUsd?: number,
-  security?: SecurityCheckResult | null
+  security?: SecurityCheckResult | null,
+  buyPoolFeeRate?: number,
+  sellPoolFeeRate?: number,
+  buyTokenTaxRate?: number,
+  sellTokenTaxRate?: number
 ): ArbNetCalculation {
   const defaultRoute = resolveBridgeRoute(buyChain, sellChain);
   const route: BridgeRouteInfo = (liveQuote && liveQuote.bridgeName) ? {
@@ -237,9 +257,43 @@ export function calculateNetArb(
     ? liveQuote.bridgeFeeUsd
     : Math.max(route.minBridgeFeeUsd, capitalUsd * route.estBridgeFeeRate);
 
-  // 3. Pool Slippage impact & Max Capacity
-  // 必须看 Pair 真实储备构成！卖出腿必须有足够 Quote 现金 (USDC/USDT/WETH/SOL) 才能兑付，
-  // 若卖出池现金储备极低（如 CAP 卖出池仅 $88.85 USDC），必须以单边真实储备限制冲击与容量
+  // 3. DEX 池手续费与代币交易税摩擦
+  const buyPoolFee = typeof buyPoolFeeRate === 'number' 
+    ? buyPoolFeeRate 
+    : (typeof liveQuote?.live?.buyPoolFee === 'number' 
+      ? liveQuote.live.buyPoolFee 
+      : (typeof security?.buySecurity?.poolFee === 'number' ? security.buySecurity.poolFee : 0.003));
+
+  const sellPoolFee = typeof sellPoolFeeRate === 'number'
+    ? sellPoolFeeRate
+    : (typeof liveQuote?.live?.sellPoolFee === 'number'
+      ? liveQuote.live.sellPoolFee
+      : (typeof security?.sellSecurity?.poolFee === 'number' ? security.sellSecurity.poolFee : 0.003));
+
+  const buyTax = typeof buyTokenTaxRate === 'number'
+    ? buyTokenTaxRate
+    : (typeof liveQuote?.live?.buyTax === 'number'
+      ? liveQuote.live.buyTax
+      : (typeof security?.buySecurity?.buyTax === 'number' ? security.buySecurity.buyTax : 0));
+
+  const sellTax = typeof sellTokenTaxRate === 'number'
+    ? sellTokenTaxRate
+    : (typeof liveQuote?.live?.sellTax === 'number'
+      ? liveQuote.live.sellTax
+      : (typeof security?.sellSecurity?.sellTax === 'number' ? security.sellSecurity.sellTax : 0));
+
+  const isTrapPool = Boolean(buyPoolFee >= 0.05 || sellPoolFee >= 0.05 || liveQuote?.live?.isTrapPool || security?.isTrapPool);
+
+  const estBuyPoolCostUsd = capitalUsd * buyPoolFee;
+  const estSellPoolCostUsd = grossRevenueUsd * sellPoolFee;
+  const estDexSwapFeesUsd = Number((estBuyPoolCostUsd + estSellPoolCostUsd).toFixed(2));
+
+  const estBuyTaxCostUsd = capitalUsd * buyTax;
+  const estSellTaxCostUsd = grossRevenueUsd * sellTax;
+  const estTokenTaxUsd = Number((estBuyTaxCostUsd + estSellTaxCostUsd).toFixed(2));
+
+  // 4. Pool Slippage impact & Max Capacity
+  // 必须看 Pair 真实储备构成！卖出腿必须有足够 Quote 现金 (USDC/USDT/WETH/SOL) 才能兑付
   const effectiveLiq = Math.max(minLiquidityUsd || 10000, 1000);
   const effectiveSellCash = (typeof sellQuoteReserveUsd === 'number' && sellQuoteReserveUsd > 0)
     ? sellQuoteReserveUsd
@@ -255,7 +309,7 @@ export function calculateNetArb(
     ? 99.9 
     : Math.min(99.9, (capitalUsd / singleSideReserve) * 100);
 
-  // 滑点 = 冲击率 / 2 + 基础磨损 0.05% (若池子已被击穿/单边抽干，滑点达 90%+)
+  // 滑点 = 冲击率 / 2 + 基础磨损 0.05%
   const slippagePct = isDrained
     ? Math.min(95, Math.max(80, (1 - (singleSideReserve / capitalUsd)) * 100))
     : Math.min(25, Math.max(0.05, (poolImpactPct / 2) + 0.05));
@@ -272,12 +326,13 @@ export function calculateNetArb(
     liquidityHealth = 'moderate';
   }
 
-  // 4. Net Profit & ROI
-  const estTotalCostUsd = estGasUsd + estBridgeFeeUsd + estSlippageUsd;
+  // 5. Net Profit & ROI (全链路扣除 Gas + 跨链桥费 + AMM滑点 + 买卖两端池子Swap手续费 + 代币合约税)
+  const estTotalCostUsd = estGasUsd + estBridgeFeeUsd + estSlippageUsd + estDexSwapFeesUsd + estTokenTaxUsd;
   const netProfitUsd = grossProfitUsd - estTotalCostUsd;
   const netRoiPct = (netProfitUsd / capitalUsd) * 100;
+  const isProfitable = netProfitUsd > 0 && !isTrapPool;
 
-  // 5. Arbitrage Viability 100-point Composite Score (0~100)
+  // 6. Arbitrage Viability 100-point Composite Score (0~100)
   // 维度1: 净收益空间 (0~40分)
   let profitScore = 0;
   if (netRoiPct >= 5) profitScore += 30;
@@ -315,11 +370,18 @@ export function calculateNetArb(
   // 维度4: 市场活跃度底分 (10分)
   const volumeScore = 10;
 
-  // 扣分惩罚项：智能合约貔貅、卖出池现金枯竭、极端滑点冲击、净亏损
+  // 扣分惩罚项：智能合约貔貅、高费率陷阱池、卖出池现金枯竭、极端滑点冲击、净亏损
   let penalty = 0;
   if (security?.isHoneypot || security?.riskLevel === 'danger') {
     penalty += 60;
   } else if (security?.riskLevel === 'warning') {
+    penalty += 20;
+  }
+
+  // 高费率陷阱池严惩 (Pool Fee >= 5% 扣 60分，>= 1% 扣 20分)
+  if (isTrapPool) {
+    penalty += 60;
+  } else if (buyPoolFee > 0.01 || sellPoolFee > 0.01) {
     penalty += 20;
   }
 
@@ -336,6 +398,9 @@ export function calculateNetArb(
   let scoreComment = '普通机会';
   if (security?.isHoneypot || security?.riskLevel === 'danger') {
     scoreComment = `高危 · ${security.riskReason || '智能合约貔貅 (无法卖出或恶意税率)'}`;
+  } else if (isTrapPool) {
+    const maxFee = Math.max(buyPoolFee, sellPoolFee);
+    scoreComment = `高费率陷阱 · 交易池手续费高达 ${(maxFee * 100).toFixed(1)}% (非真实套利)`;
   } else if (isDrained || effectiveSellCash < 500) {
     scoreComment = '高危 · 卖出池现金枯竭';
   } else if (score >= 85) {
@@ -368,10 +433,17 @@ export function calculateNetArb(
     estGasUsd,
     estBridgeFeeUsd,
     estSlippageUsd,
+    estDexSwapFeesUsd,
+    estTokenTaxUsd,
+    buyPoolFeeRate: buyPoolFee,
+    sellPoolFeeRate: sellPoolFee,
+    buyTokenTaxRate: buyTax,
+    sellTokenTaxRate: sellTax,
+    isTrapPool,
     estTotalCostUsd,
     netProfitUsd,
     netRoiPct,
-    isProfitable: netProfitUsd > 0,
+    isProfitable,
     priceDelta,
     slippagePct,
     poolImpactPct,
