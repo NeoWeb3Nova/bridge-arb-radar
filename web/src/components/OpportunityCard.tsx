@@ -42,7 +42,7 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-[var(--text-primary)] text-base tracking-tight truncate">
+              <span className="font-bold text-[var(--text-primary)] group-hover:text-[#f5c042] text-base tracking-tight truncate transition-colors">
                 {opp.symbol}
               </span>
               <VerdictBadge verdict={opp.verdict} size="xs" />
@@ -231,10 +231,10 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
               onSelect?.(opp);
             }}
             className="px-2 py-0.5 rounded bg-[#f5c042]/10 hover:bg-[#f5c042]/25 text-[#f5c042] border border-[#f5c042]/30 transition flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-            title={locale === 'zh' ? '点击进行实时二次验价与操盘决策' : 'Live Re-quote & Track'}
+            title={locale === 'zh' ? '点击查看标的实时行情与操盘' : 'Trade & Details'}
           >
             <FileEdit size={10} />
-            <span>{locale === 'zh' ? '实时验价' : 'Live Quote'}</span>
+            <span>{locale === 'zh' ? '操盘' : 'Track'}</span>
           </button>
         </div>
       </div>

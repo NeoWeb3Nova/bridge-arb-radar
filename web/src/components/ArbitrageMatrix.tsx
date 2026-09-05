@@ -582,7 +582,14 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           {/* 1. 资产与认证 */}
                           <td className="py-2.5 px-3 whitespace-nowrap">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-[var(--text-primary)] font-mono text-sm tracking-tight">
+                              <span 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSelectOpp(row);
+                                }}
+                                className="font-bold text-[var(--text-primary)] hover:text-[#f5c042] font-mono text-sm tracking-tight cursor-pointer hover:underline transition-colors"
+                                title={locale === 'zh' ? '点击查看标的实时行情与操盘' : 'Click to view live quote & trade'}
+                              >
                                 {row.symbol}
                               </span>
                               <VerdictBadge verdict={row.verdict} size="xs" />
@@ -844,10 +851,10 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                               <button
                                 onClick={() => onSelectOpp(row)}
                                 className="px-2 py-1 rounded bg-[#f5c042]/15 hover:bg-[#f5c042]/25 text-[#f5c042] border border-[#f5c042]/30 text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
-                                title={locale === 'zh' ? '点击进行毫秒级实时二次验价与操盘决策' : 'Live Re-quote & Track'}
+                                title={locale === 'zh' ? '查看标的实时行情与操盘' : 'Open Trade Console'}
                               >
                                 <FileEdit size={11} />
-                                <span>{locale === 'zh' ? '实时验价' : tr('dmTrack')}</span>
+                                <span>{tr('dmTrack')}</span>
                               </button>
                               <button
                                 onClick={() => setExpandedKey(isExpanded ? null : row.uniqueKey)}

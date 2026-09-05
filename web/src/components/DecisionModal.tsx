@@ -173,7 +173,7 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
               {loadingLive ? (
                 <span className="flex items-center gap-1 text-sky-400">
                   <RefreshCw size={10} className="animate-spin" />
-                  <span>DEX 实时询价中...</span>
+                  <span>代币现价与链上实时询价中...</span>
                 </span>
               ) : isLive ? (
                 <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
@@ -203,10 +203,10 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
               onClick={() => fetchLiveQuote(true)}
               disabled={loadingLive}
               className="px-2 py-1 rounded bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
-              title="立即向 DEXScreener 与跨链聚合器发起最新一轮现货验价"
+              title="重新向 DEX 与跨链聚合器拉取最新实时盘口"
             >
               <RefreshCw size={11} className={loadingLive ? 'animate-spin text-[#f5c042]' : ''} />
-              <span className="hidden sm:inline">立即验价</span>
+              <span className="hidden sm:inline">刷新报价</span>
             </button>
 
             <button 
@@ -466,10 +466,10 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                   type="button"
                   onClick={insertLiveQuoteToNote}
                   className="text-[10px] text-[#f5c042] hover:underline flex items-center gap-1 cursor-pointer"
-                  title="自动将上方实时验价的价格与价差填入本次笔记"
+                  title="自动将上方实时行情的最新价格与价差填入本次笔记"
                 >
                   <Plus size={11} />
-                  <span>一键填入最新验价</span>
+                  <span>一键填入最新报价</span>
                 </button>
               )}
             </div>
@@ -553,7 +553,7 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
         {/* 底部按钮栏 */}
         <div className="p-3.5 border-t border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 flex items-center justify-between gap-2">
           <div className="text-[10px] text-[var(--text-muted)] font-mono">
-            {liveQuote?.checkedAt ? `最近验价: ${new Date(liveQuote.checkedAt).toLocaleTimeString()}` : ''}
+            {liveQuote?.checkedAt ? `报价时间: ${new Date(liveQuote.checkedAt).toLocaleTimeString()}` : ''}
           </div>
           <div className="flex items-center gap-2">
             <button
