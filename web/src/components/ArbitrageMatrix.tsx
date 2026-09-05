@@ -8,7 +8,7 @@ import {
   ArrowRight, ExternalLink, Copy, Check, FileEdit, 
   ChevronDown, ChevronUp, Search, Filter, ArrowUpDown, 
   Sparkles, ShieldCheck, ShieldAlert, Layers, LayoutGrid, Table, DollarSign,
-  TrendingUp, CheckCircle, AlertTriangle, RefreshCw, Clock
+  TrendingUp, CheckCircle, AlertTriangle, RefreshCw, Clock, X
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 
@@ -16,6 +16,8 @@ interface Props {
   opportunities: OpportunityItem[];
   onSelectOpp: (opp: OpportunityItem) => void;
   sseConnected?: boolean;
+  filterSymbol?: string;
+  onClearFilter?: () => void;
 }
 
 type SortField = 'score' | 'netProfit' | 'spread' | 'liquidity' | 'volume' | 'time';
@@ -25,7 +27,9 @@ type VerdictFilter = 'all' | 'verified' | 'clean';
 export const ArbitrageMatrix: React.FC<Props> = ({ 
   opportunities, 
   onSelectOpp, 
-  sseConnected = true 
+  sseConnected = true,
+  filterSymbol,
+  onClearFilter,
 }) => {
   const { locale, t: tr } = useI18n();
 
@@ -39,6 +43,24 @@ export const ArbitrageMatrix: React.FC<Props> = ({
   const [sortField, setSortField] = useState<SortField>('netProfit');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [isFolded, setIsFolded] = useState<boolean>(true);
+  const [isModuleCollapsed, setIsModuleCollapsed] = useState<boolean>(false);
+  const DEFAULT_FOLD_COUNT = 8;
+
+  // Sync external filterSymbol
+  useEffect(() => {
+    if (filterSymbol) {
+      setSearchQuery(filterSymbol);
+      setChainFilter('all');
+      setVerdictFilter('all');
+      const match = opportunities.find(
+        (o) => o.symbol.toLowerCase() === filterSymbol.toLowerCase()
+      );
+      if (match) {
+        setExpandedKey(`${match.symbol}-${match.buyChain}-${match.sellChain}`);
+      }
+    }
+  }, [filterSymbol, opportunities]);
 
   // Copy state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -224,6 +246,20 @@ export const ArbitrageMatrix: React.FC<Props> = ({
       });
   }, [opportunities, searchQuery, chainFilter, verdictFilter, capitalUsd, sortField, sortOrder, liveQuotes]);
 
+  // 折叠计算：默认仅渲染 TOP 8 精选标的；搜索/过滤时自动全展开
+  const visibleData = useMemo(() => {
+    if (!isFolded || searchQuery.trim() || chainFilter !== 'all' || verdictFilter !== 'all') {
+      return processedData;
+    }
+    if (expandedKey) {
+      const idx = processedData.findIndex((o) => o.uniqueKey === expandedKey);
+      if (idx >= DEFAULT_FOLD_COUNT) {
+        return processedData;
+      }
+    }
+    return processedData.slice(0, DEFAULT_FOLD_COUNT);
+  }, [processedData, isFolded, searchQuery, chainFilter, verdictFilter, expandedKey]);
+
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
@@ -253,17 +289,38 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* 左侧：标题与状态指示 */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsModuleCollapsed(!isModuleCollapsed)}
+              className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 hover:text-[#f5c042] transition cursor-pointer text-left group"
+              title={isModuleCollapsed ? '点击展开执行矩阵' : '点击折叠执行矩阵'}
+            >
               <TrendingUp size={16} className="text-[#f5c042]" />
               <span>{tr('dmTitle')}</span>
-            </h2>
+              {isModuleCollapsed ? (
+                <ChevronDown size={14} className="text-[var(--text-muted)] group-hover:text-[#f5c042] transition" />
+              ) : (
+                <ChevronUp size={14} className="text-[var(--text-muted)] group-hover:text-[#f5c042] transition" />
+              )}
+            </button>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#45c4b0]/10 border border-[#45c4b0]/25 text-[10px] font-mono font-semibold text-[#45c4b0]">
               <span className={`w-1.5 h-1.5 rounded-full bg-[#45c4b0] ${sseConnected ? 'animate-pulse-dot' : ''}`} />
               <span>{sseConnected ? tr('dmLiveTracking') : 'OFFLINE'}</span>
             </div>
             <span className="text-[11px] text-[var(--text-muted)] font-mono">
-              ({processedData.length} {locale === 'zh' ? '条套利路径' : 'routes'})
+              ({processedData.length} {locale === 'zh' ? '条套利路径' : 'routes'}{isModuleCollapsed ? (locale === 'zh' ? ' · 已收起' : ' · Collapsed') : ''})
             </span>
+            {!isModuleCollapsed && processedData.length > DEFAULT_FOLD_COUNT && !searchQuery.trim() && chainFilter === 'all' && verdictFilter === 'all' && (
+              <button
+                type="button"
+                onClick={() => setIsFolded(!isFolded)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-sans font-medium bg-[var(--bg-elevated)] hover:bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[#f5c042] border border-[var(--border-subtle)] transition cursor-pointer ml-1"
+                title={isFolded ? '点击展开全部标的' : '点击折叠至前 8 条'}
+              >
+                <span>{isFolded ? (locale === 'zh' ? `展开全部 (${processedData.length})` : 'Show All') : (locale === 'zh' ? '折叠至前 8 条' : 'Top 8')}</span>
+                {isFolded ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+              </button>
+            )}
           </div>
 
           {/* 右侧：模拟头寸 Position Sizer & 视图切换 */}
@@ -329,7 +386,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         </div>
 
         {/* 筛选过滤行 */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[var(--border-subtle)] text-xs">
+        {!isModuleCollapsed && (
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[var(--border-subtle)] text-xs">
           <div className="flex items-center gap-2 flex-wrap flex-1 max-w-2xl">
             {/* 搜索 */}
             <div className="relative min-w-[140px] flex-1">
@@ -339,8 +397,21 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                 placeholder={tr('dmSearchPh')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-md pl-7 pr-2.5 py-1 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] uppercase font-mono font-medium focus:outline-none focus:border-[#f5c042]"
+                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-md pl-7 pr-7 py-1 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] uppercase font-mono font-medium focus:outline-none focus:border-[#f5c042]"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    onClearFilter?.();
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] p-0.5 rounded cursor-pointer transition"
+                  title="清除搜索"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
 
             {/* 链过滤 */}
@@ -407,10 +478,13 @@ export const ArbitrageMatrix: React.FC<Props> = ({
             </button>
           </div>
         </div>
-      </div>
+      )}
+    </div>
 
       {/* 主展示区：表格模式 OR 卡片模式 */}
-      {viewMode === 'table' ? (
+      {!isModuleCollapsed && (
+        <>
+          {viewMode === 'table' ? (
         <div className="terminal-panel rounded-lg overflow-hidden border border-[var(--border-subtle)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-[var(--text-primary)]">
@@ -471,11 +545,27 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                 {processedData.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="text-center py-16 text-[var(--text-muted)] text-xs">
-                      {tr('noOpps')}
+                      {searchQuery ? (
+                        <div className="space-y-2">
+                          <p>{locale === 'zh' ? `未在当前雷达机会库中匹配到代币「${searchQuery}」的跨链套利路线` : `No opportunities found matching "${searchQuery}"`}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery('');
+                              onClearFilter?.();
+                            }}
+                            className="text-[#f5c042] hover:underline font-semibold cursor-pointer"
+                          >
+                            {locale === 'zh' ? '清除筛选查看全部机会' : 'Clear search and view all'}
+                          </button>
+                        </div>
+                      ) : (
+                        tr('noOpps')
+                      )}
                     </td>
                   </tr>
                 ) : (
-                  processedData.map((row) => {
+                  visibleData.map((row) => {
                     const isExpanded = expandedKey === row.uniqueKey;
                     const flash = flashMap[row.uniqueKey];
                     const flashClass = flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : '';
@@ -1245,10 +1335,26 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
           {processedData.length === 0 ? (
             <div className="col-span-full py-16 text-center text-xs text-[var(--text-secondary)] terminal-panel">
-              {tr('noOpps')}
+              {searchQuery ? (
+                <div className="space-y-2">
+                  <p>{locale === 'zh' ? `未在当前雷达机会库中匹配到代币「${searchQuery}」的跨链套利路线` : `No opportunities found matching "${searchQuery}"`}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      onClearFilter?.();
+                    }}
+                    className="text-[#f5c042] hover:underline font-semibold cursor-pointer"
+                  >
+                    {locale === 'zh' ? '清除筛选查看全部机会' : 'Clear search and view all'}
+                  </button>
+                </div>
+              ) : (
+                tr('noOpps')
+              )}
             </div>
           ) : (
-            processedData.map((opp) => (
+            visibleData.map((opp) => (
               <OpportunityCard
                 key={opp.uniqueKey}
                 opp={opp}
@@ -1257,6 +1363,39 @@ export const ArbitrageMatrix: React.FC<Props> = ({
             ))
           )}
         </div>
+      )}
+
+      {/* 底部折叠/展开操作条 */}
+      {processedData.length > DEFAULT_FOLD_COUNT && !searchQuery.trim() && chainFilter === 'all' && verdictFilter === 'all' && (
+        <div className="flex items-center justify-center pt-1 pb-1">
+          <button
+            type="button"
+            onClick={() => setIsFolded(!isFolded)}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-[var(--bg-elevated)] hover:bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[#f5c042]/50 text-xs font-semibold text-[var(--text-primary)] transition-all cursor-pointer shadow-sm group"
+          >
+            {isFolded ? (
+              <>
+                <span className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
+                  {locale === 'zh'
+                    ? `展开查看其余 ${processedData.length - visibleData.length} 个标的路线（当前展示前 ${visibleData.length} 条 · 共 ${processedData.length} 条）`
+                    : `Show ${processedData.length - visibleData.length} more routes (Showing Top ${visibleData.length} of ${processedData.length})`}
+                </span>
+                <ChevronDown size={14} className="text-[#f5c042] group-hover:translate-y-0.5 transition-transform" />
+              </>
+            ) : (
+              <>
+                <span className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
+                  {locale === 'zh'
+                    ? `收起标的列表（仅展示前 ${DEFAULT_FOLD_COUNT} 条高优路线）`
+                    : `Collapse to Top ${DEFAULT_FOLD_COUNT} Routes`}
+                </span>
+                <ChevronUp size={14} className="text-[#f5c042] group-hover:-translate-y-0.5 transition-transform" />
+              </>
+            )}
+          </button>
+        </div>
+      )}
+        </>
       )}
     </div>
   );

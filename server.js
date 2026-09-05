@@ -11,7 +11,7 @@ const events = require('./lib/events');
 const { createApiRoutes } = require('./lib/routes');
 
 const PORT = Number(process.env.PORT || 8848);
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 const MIME = {
@@ -176,7 +176,8 @@ server.listen(PORT, HOST, () => {
   try { store.checkpoint('TRUNCATE'); } catch { /* ignore */ }
 
   const st = store.storageStatus();
-  console.log(`\n  Bridge Arb Radar 已启动:  http://${HOST}:${PORT}\n  数据目录: ${path.join(__dirname, 'data')}`);
+  const displayHost = HOST === '0.0.0.0' ? '127.0.0.1' : HOST;
+  console.log(`\n  Bridge Arb Radar 已启动:  http://${displayHost}:${PORT}\n  数据目录: ${path.join(__dirname, 'data')}`);
   console.log(`  存储后端: SQLite（${st.mainSizeBytes > 0 ? (st.mainSizeBytes / 1048576).toFixed(1) + ' MB' : '空库'}，完整性 ${st.integrity}，备份 ${st.backupCount} 份）`);
   if (st.backupCount === 0) {
     try { const b = store.backupNow(); console.log(`  已生成首份备份：${path.basename(b)}`); } catch (e) { console.error('[backup] 首份备份失败：', e.message); }

@@ -39,13 +39,15 @@ interface Props {
   onClose: () => void;
   onNavigateToDash?: () => void;
   onSelectOpp?: (opp: OpportunityItem) => void;
+  onViewInMatrix?: (symbol: string, opp?: OpportunityItem | null) => void;
 }
 
 export const TokenCheckModal: React.FC<Props> = ({ 
   report, 
   onClose, 
   onNavigateToDash,
-  onSelectOpp 
+  onSelectOpp,
+  onViewInMatrix,
 }) => {
   const { locale } = useI18n();
   const [copied, setCopied] = useState(false);
@@ -63,10 +65,13 @@ export const TokenCheckModal: React.FC<Props> = ({
   };
 
   const handleGoToOpportunity = () => {
-    if (best) {
+    const sym = token.symbol || best?.symbol || '';
+    if (onViewInMatrix) {
+      onViewInMatrix(sym, best);
+    } else if (onNavigateToDash) {
+      onNavigateToDash();
+    } else if (best) {
       onSelectOpp?.(best);
-    } else {
-      onNavigateToDash?.();
     }
     onClose();
   };

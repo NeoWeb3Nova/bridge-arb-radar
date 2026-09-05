@@ -21,9 +21,10 @@ interface TokenItem {
 interface Props {
   onNavigateToDash?: () => void;
   onSelectOpp?: (opp: OpportunityItem) => void;
+  onViewInMatrix?: (symbol: string, opp?: OpportunityItem | null) => void;
 }
 
-export const TokensView: React.FC<Props> = ({ onNavigateToDash, onSelectOpp }) => {
+export const TokensView: React.FC<Props> = ({ onNavigateToDash, onSelectOpp, onViewInMatrix }) => {
   const { t: tr } = useI18n();
   const [tokens, setTokens] = useState<TokenItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -222,6 +223,7 @@ export const TokensView: React.FC<Props> = ({ onNavigateToDash, onSelectOpp }) =
           onClose={() => setReport(null)}
           onNavigateToDash={onNavigateToDash}
           onSelectOpp={onSelectOpp}
+          onViewInMatrix={onViewInMatrix}
         />
       )}
     </div>

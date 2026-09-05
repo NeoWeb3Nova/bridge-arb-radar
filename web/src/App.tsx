@@ -27,6 +27,7 @@ export const App: React.FC = () => {
   const [state, setState] = useState<AppState | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletItem | null>(null);
   const [selectedOpp, setSelectedOpp] = useState<OpportunityItem | null>(null);
+  const [matrixFilterSymbol, setMatrixFilterSymbol] = useState<string>('');
   const [scanning, setScanning] = useState(false);
   const [sseConnected, setSseConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -162,7 +163,12 @@ export const App: React.FC = () => {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setTab(item.id as any)}
+              onClick={() => {
+                if (item.id === 'dash' && tab !== 'dash') {
+                  setMatrixFilterSymbol('');
+                }
+                setTab(item.id as any);
+              }}
               className={`py-2.5 border-b-2 flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer tracking-tight ${
                 tab === item.id 
                   ? 'border-[#f5c042] text-[#f5c042] font-semibold' 
@@ -218,6 +224,8 @@ export const App: React.FC = () => {
             <ArbitrageMatrix
               opportunities={state?.opportunities || []}
               onSelectOpp={(opp) => setSelectedOpp(opp)}
+              filterSymbol={matrixFilterSymbol}
+              onClearFilter={() => setMatrixFilterSymbol('')}
               sseConnected={sseConnected}
             />
 
@@ -274,10 +282,26 @@ export const App: React.FC = () => {
         {tab === 'wallets' && <WalletsView onSelectWallet={(w) => setSelectedWallet(w)} />}
         {tab === 'tokens' && (
           <TokensView 
-            onNavigateToDash={() => setTab('dash')}
-            onSelectOpp={(opp) => {
-              setSelectedOpp(opp);
+            onNavigateToDash={() => {
+              setMatrixFilterSymbol('');
               setTab('dash');
+            }}
+            onViewInMatrix={(symbol, opp) => {
+              setMatrixFilterSymbol(symbol);
+              setTab('dash');
+              if (opp) {
+                setState((prev) => {
+                  if (!prev) return prev;
+                  const filtered = (prev.opportunities || []).filter(
+                    (o) => !(o.symbol === opp.symbol && o.buyChain === opp.buyChain && o.sellChain === opp.sellChain)
+                  );
+                  return {
+                    ...prev,
+                    opportunities: [opp, ...filtered],
+                  };
+                });
+              }
+              fetchState();
             }}
           />
         )}
