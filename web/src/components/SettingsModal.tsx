@@ -97,6 +97,21 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
+  const fetchStorageStatus = async () => {
+    setStorageLoading(true);
+    try {
+      const res = await fetch('/api/storage');
+      const data = await res.json();
+      if (data.ok) {
+        setStorageData(data);
+      }
+    } catch (e) {
+      console.error('Failed to load storage status:', e);
+    } finally {
+      setStorageLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     setTgTestResult(null);
@@ -137,7 +152,11 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       .catch((err) => console.error('Error fetching settings:', err));
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen && activeTab === 'storage') {
+      fetchStorageStatus();
+    }
+  }, [isOpen, activeTab]);
 
   const handleSelectAllChannels = () => {
     setWebEnabled(true);
@@ -227,27 +246,6 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setTgTesting(false);
     }
   };
-
-  const fetchStorageStatus = async () => {
-    setStorageLoading(true);
-    try {
-      const res = await fetch('/api/storage');
-      const data = await res.json();
-      if (data.ok) {
-        setStorageData(data);
-      }
-    } catch (e) {
-      console.error('Failed to load storage status:', e);
-    } finally {
-      setStorageLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen && activeTab === 'storage') {
-      fetchStorageStatus();
-    }
-  }, [isOpen, activeTab]);
 
   const handleDownloadBackup = async () => {
     setBackupLoading(true);
@@ -343,6 +341,8 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
       console.error(e);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">

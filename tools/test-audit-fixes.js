@@ -379,18 +379,16 @@ async function runTests() {
     ok('/api/storage 状态接口返回正确', storageRes.ok === true && storageRes.backend === 'sqlite');
     ok('/api/storage 包含各业务表 rowCount 统计', storageRes.rowCount && typeof storageRes.rowCount.transfers === 'number');
 
-    // 独立测试库完整事务重置与备份验证 (在独立测试库验证，不影响现有主库)
+    // 独立测试库完整事务重置与备份验证 (使用内存库验证，不影响现有生产主库)
     const { DatabaseSync } = require('node:sqlite');
-    const testDbPath = path.join(__dirname, '../data/test-safe-reset.db');
-    try { fs.unlinkSync(testDbPath); } catch {}
-    const testDb = new DatabaseSync(testDbPath);
+    const testDb = new DatabaseSync(':memory:');
     testDb.exec(`
-      CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-      CREATE TABLE transfers (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-      CREATE TABLE wallets (address TEXT PRIMARY KEY, data TEXT NOT NULL);
-      CREATE TABLE tokens (key TEXT PRIMARY KEY, data TEXT NOT NULL);
-      CREATE TABLE opportunities (rowid INTEGER PRIMARY KEY, data TEXT NOT NULL);
-      CREATE TABLE scanlog (rowid INTEGER PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS transfers (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS wallets (address TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS tokens (key TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS opportunities (rowid INTEGER PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS scanlog (rowid INTEGER PRIMARY KEY, data TEXT NOT NULL);
       INSERT INTO meta(key, value) VALUES ('settings', '{"keys":{"range":"testkey"}}');
       INSERT INTO meta(key, value) VALUES ('stats', '{"transfersSeen":999}');
       INSERT INTO transfers(id, data) VALUES ('tx1', '{"id":"tx1"}');
@@ -425,7 +423,6 @@ async function runTests() {
     ok('用户自定义 API Key 与设置被完整保留', settingsKept.keys?.range === 'testkey');
 
     testDb.close();
-    try { fs.unlinkSync(testDbPath); } catch {}
   }
 
   console.log(`\n============================`);
