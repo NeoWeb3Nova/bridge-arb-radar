@@ -269,13 +269,45 @@ export const App: React.FC = () => {
           <div className="space-y-6">
             {/* 核心指标展台 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-              <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mTransfers')}</div>
-                <div className="font-mono-num text-2xl font-bold text-[var(--text-primary)]">
-                  {state?.counts.transfers.toLocaleString() || '0'}
-                </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-1">{tr('mTransfersSub')} {state?.counts.transfers24h || 0} {tr('mTransfersUnit')}</div>
-              </div>
+              {(() => {
+                const transfersCount = state?.counts.transfers || 0;
+                const maxTransfers = state?.counts.maxTransfers || 8000;
+                const isCapped = transfersCount >= maxTransfers;
+                return (
+                  <div
+                    className="terminal-panel p-4 cursor-default relative group"
+                    title={isCapped ? tr('mTransfersCappedTooltip') : undefined}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight">{tr('mTransfers')}</div>
+                      {isCapped && (
+                        <span
+                          className="px-1.5 py-0.5 text-[9px] font-semibold bg-[#f5c042]/15 text-[#f5c042] border border-[#f5c042]/30 rounded tracking-tight cursor-help"
+                          title={tr('mTransfersCappedTooltip')}
+                        >
+                          {tr('mTransfersCappedBadge')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono-num text-2xl font-bold text-[var(--text-primary)] flex items-baseline gap-1.5">
+                      {transfersCount.toLocaleString()}
+                      {isCapped && (
+                        <span className="text-xs font-normal text-[var(--text-muted)]">
+                          / {maxTransfers.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)] mt-1 flex items-center justify-between">
+                      <span>{tr('mTransfersSub')} {state?.counts.transfers24h || 0} {tr('mTransfersUnit')}</span>
+                      {isCapped && (
+                        <span className="text-[10px] text-[var(--text-muted)] opacity-80 cursor-help" title={tr('mTransfersCappedTooltip')}>
+                          {tr('mTransfersRolling')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="terminal-panel p-4">
                 <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mWallets')}</div>

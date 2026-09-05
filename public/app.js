@@ -170,13 +170,21 @@ async function loadDash() {
   try {
     const s = await api('/api/state');
     const c = s.counts;
+    const maxT = c.maxTransfers || 8000;
+    const isCapped = c.transfers >= maxT;
+    const tVal = isCapped ? `${c.transfers.toLocaleString()} / ${maxT.toLocaleString()}` : c.transfers.toLocaleString();
+    const tDesc = isCapped ? `24h 新增 ${c.transfers24h} · FIFO 滚动` : `24h 新增 ${c.transfers24h}`;
+    const tTip = isCapped
+      ? `已达到系统设定的容量上限 (${maxT.toLocaleString()} 条)。采用 FIFO（先进先出）机制滚动更新：新流水入库时会自动淘汰最旧流水，确保毫秒级极速比价与轻量占用。`
+      : `当前收录流水：${c.transfers.toLocaleString()} 条`;
+
     $('#statCards').innerHTML = [
       ['钱包库', c.wallets, `${c.walletsA} 个 A 级`],
       ['代币库', c.tokens, `${c.unknownTokens} 个陌生代币`],
-      ['桥流水', c.transfers, `24h 新增 ${c.transfers24h}`],
+      ['桥流水', tVal, tDesc, tTip],
       ['价差机会', c.opportunities, '超过阈值的记录'],
       ['扫描次数', s.lastScanAt ? '已运行' : '未运行', s.lastScanAt ? ago(s.lastScanAt) : '点右上角立即扫描'],
-    ].map(([k, v, d]) => `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join('');
+    ].map(([k, v, d, tip]) => `<div class="card"${tip ? ` title="${esc(tip)}"` : ''}><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join('');
 
     $('#oppCount').textContent = `共 ${c.opportunities} 条`;
     // 整体裁决回退：老数据无 verdict 字段时按原有可疑标记推导
@@ -429,9 +437,24 @@ function diffCounts(counts) {
 }
 
 function renderPipeCards(counts, changed) {
+  const maxT = counts?.maxTransfers || 8000;
   $('#pipeCards').innerHTML = PIPE_CARDS.map(([label, key, unit]) => {
     const flash = changed && changed.has(key) ? ' flash' : '';
-    return `<div class="card${flash}" data-count="${esc(key)}"><div class="k">${esc(label)}</div><div class="v">${esc(counts?.[key] ?? 0)}</div><div class="d">${esc(unit)}</div></div>`;
+    let val = counts?.[key] ?? 0;
+    let desc = unit;
+    let tip = '';
+    if (key === 'transfers') {
+      const isCapped = val >= maxT;
+      if (isCapped) {
+        val = `${Number(val).toLocaleString()} / ${Number(maxT).toLocaleString()}`;
+        desc = `已达容量上限 · 滚动保留最新`;
+        tip = `系统默认保留最新 ${maxT.toLocaleString()} 条流水（FIFO 先进先出机制）。新流水入库会自动淘汰最老流水以维持极速计算与轻量内存。`;
+      } else {
+        val = Number(val).toLocaleString();
+        tip = `当前保留流水 ${val} 条（上限 ${maxT.toLocaleString()} 条）`;
+      }
+    }
+    return `<div class="card${flash}" data-count="${esc(key)}"${tip ? ` title="${esc(tip)}"` : ''}><div class="k">${esc(label)}</div><div class="v">${esc(val)}</div><div class="d">${esc(desc)}</div></div>`;
   }).join('');
 }
 

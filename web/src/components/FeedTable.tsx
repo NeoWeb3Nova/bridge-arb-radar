@@ -8,6 +8,7 @@ export const FeedTable: React.FC = () => {
   const { t: tr } = useI18n();
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
   const [total, setTotal] = useState<number>(0);
+  const [maxTransfers, setMaxTransfers] = useState<number>(8000);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [justRefreshed, setJustRefreshed] = useState(false);
@@ -29,6 +30,7 @@ export const FeedTable: React.FC = () => {
       if (data.ok) {
         setTransfers(data.items || []);
         if (data.total !== undefined) setTotal(data.total);
+        if (data.maxTransfers !== undefined) setMaxTransfers(data.maxTransfers);
       }
       if (isManual) {
         // 保证平滑可感知的旋转反馈，避免 1ms 瞬间完成导致视觉上无感知
@@ -98,9 +100,19 @@ export const FeedTable: React.FC = () => {
 
         <div className="flex items-center gap-2">
           {total > 0 && (
-            <span className="text-[11px] text-[var(--text-muted)] font-mono hidden md:inline mr-1">
-              {tr('feedTotalCount')}: <b className="text-[var(--text-primary)]">{total.toLocaleString()}</b> 条
-            </span>
+            <div className="flex items-center gap-1.5 hidden md:flex mr-1">
+              <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                {tr('feedTotalCount')}: <b className="text-[var(--text-primary)]">{total.toLocaleString()}</b>{total >= maxTransfers ? ` / ${maxTransfers.toLocaleString()}` : ''} 条
+              </span>
+              {total >= maxTransfers && (
+                <span
+                  className="px-1.5 py-0.5 text-[9px] font-semibold bg-[#f5c042]/15 text-[#f5c042] border border-[#f5c042]/30 rounded tracking-tight cursor-help"
+                  title={tr('mTransfersCappedTooltip')}
+                >
+                  {tr('mTransfersCappedBadge')}
+                </span>
+              )}
+            </div>
           )}
 
           {/* 刷新本地流水 */}

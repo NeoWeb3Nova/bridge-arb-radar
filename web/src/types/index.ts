@@ -223,6 +223,7 @@ export interface AppState {
     opportunities: number;
     decisions: number;
     transfers24h: number;
+    maxTransfers?: number;
   };
   scanning: boolean;
   lastScanAt: string | null;
