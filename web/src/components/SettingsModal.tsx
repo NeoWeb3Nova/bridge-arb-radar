@@ -491,98 +491,152 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="terminal-panel w-full max-w-xl rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="terminal-panel w-full max-w-4xl h-[680px] max-h-[92vh] rounded-xl overflow-hidden shadow-2xl flex flex-col">
         {/* 标题栏 */}
-        <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface)]">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-[#f5c042]/10 border border-[#f5c042]/30 flex items-center justify-center text-[#f5c042]">
-              <Sliders size={15} />
+        <div className="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface)] shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#f5c042]/10 border border-[#f5c042]/30 flex items-center justify-center text-[#f5c042]">
+              <Sliders size={16} />
             </div>
             <div>
               <h3 className="font-bold text-sm text-[var(--text-primary)]">
                 {tr('setModalTitle')}
               </h3>
               <p className="text-[11px] text-[var(--text-muted)]">
-                套利机会推送、后台自动扫描频率与网络代理配置
+                套利机会推送、后台自动扫描频率、网络代理与稳定币白名单
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 transition cursor-pointer"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--bg-surface-hover)] transition cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Tab 导航切换 */}
-        <div className="flex border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 px-4 pt-2 gap-2 text-xs">
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
-              activeTab === 'notifications'
-                ? 'border-[#f5c042] text-[#f5c042]'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Bell size={14} />
-            <span>{tr('setNotifTitle')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('scan')}
-            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
-              activeTab === 'scan'
-                ? 'border-[#f5c042] text-[#f5c042]'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Clock size={14} />
-            <span>{tr('setScanTabTitle')}</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-[#f5c042] border border-[#f5c042]/30">
-              {scanAutoEnabled ? `${scanIntervalMin || 5}m` : '已暂停'}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('proxy')}
-            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
-              activeTab === 'proxy'
-                ? 'border-[#f5c042] text-[#f5c042]'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Globe size={14} />
-            <span>网络代理与 API 密钥</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('stablecoins')}
-            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
-              activeTab === 'stablecoins'
-                ? 'border-[#f5c042] text-[#f5c042]'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Coins size={14} />
-            <span>{tr('setStablecoinsTabTitle')}</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              {selectedStables.length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('storage')}
-            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
-              activeTab === 'storage'
-                ? 'border-rose-500 text-rose-400'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Database size={14} className={activeTab === 'storage' ? 'text-rose-400' : ''} />
-            <span>{tr('setStorageTabTitle')}</span>
-          </button>
-        </div>
+        {/* 中间左右分栏主体 (Main Left-Right Body) */}
+        <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+          {/* 左侧侧边栏导航 (Left Sidebar Navigation) */}
+          <div className="w-full md:w-56 bg-[var(--bg-elevated)]/40 border-b md:border-b-0 md:border-r border-[var(--border-subtle)] flex flex-col p-3 gap-1 shrink-0 select-none overflow-y-auto">
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                activeTab === 'notifications'
+                  ? 'bg-[#f5c042]/15 text-[#f5c042] font-semibold border border-[#f5c042]/30 shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Bell size={15} className={activeTab === 'notifications' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
+                <span>{tr('setNotifTitle')}</span>
+              </div>
+              {notifEnabled && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20" title="推送已启用" />
+              )}
+            </button>
 
-        {/* 内容区 */}
-        <div className="p-4 space-y-4 text-xs overflow-y-auto flex-1">
-          {activeTab === 'notifications' && (
+            <button
+              onClick={() => setActiveTab('scan')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                activeTab === 'scan'
+                  ? 'bg-[#f5c042]/15 text-[#f5c042] font-semibold border border-[#f5c042]/30 shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Clock size={15} className={activeTab === 'scan' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
+                <span>{tr('setScanTabTitle')}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                scanAutoEnabled
+                  ? 'bg-amber-500/15 text-[#f5c042] border-[#f5c042]/30'
+                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-subtle)]'
+              }`}>
+                {scanAutoEnabled ? `${scanIntervalMin || 5}m` : '已暂停'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('proxy')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                activeTab === 'proxy'
+                  ? 'bg-[#f5c042]/15 text-[#f5c042] font-semibold border border-[#f5c042]/30 shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Globe size={15} className={activeTab === 'proxy' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
+                <span>网络代理与密钥</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('stablecoins')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                activeTab === 'stablecoins'
+                  ? 'bg-[#f5c042]/15 text-[#f5c042] font-semibold border border-[#f5c042]/30 shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Coins size={15} className={activeTab === 'stablecoins' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
+                <span>{tr('setStablecoinsTabTitle')}</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                {selectedStables.length} 种
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('storage')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                activeTab === 'storage'
+                  ? 'bg-rose-500/15 text-rose-300 font-semibold border border-rose-500/30 shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Database size={15} className={activeTab === 'storage' ? 'text-rose-400' : 'text-[var(--text-muted)]'} />
+                <span>{tr('setStorageTabTitle')}</span>
+              </div>
+            </button>
+
+            {/* 侧边栏底部状态说明 */}
+            <div className="mt-auto pt-3 border-t border-[var(--border-subtle)] text-[10px] text-[var(--text-muted)] px-1">
+              <div className="flex items-center gap-1.5 text-[var(--text-secondary)] mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f5c042]"></span>
+                <span className="font-semibold">Arbitrage Engine v2</span>
+              </div>
+              <div className="truncate text-[10px]">SQLite Local DB</div>
+            </div>
+          </div>
+
+          {/* 右侧内容区域 (Right Content Area) */}
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-[var(--bg-base)]/30">
+            {/* 当前栏目描述头部 */}
+            <div className="px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/70 flex items-center justify-between shrink-0">
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">
+                  {activeTab === 'notifications' && tr('setNotifTitle')}
+                  {activeTab === 'scan' && tr('setScanTabTitle')}
+                  {activeTab === 'proxy' && '网络代理与 API 密钥'}
+                  {activeTab === 'stablecoins' && tr('setStablecoinsTabTitle')}
+                  {activeTab === 'storage' && tr('setStorageTabTitle')}
+                </h4>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                  {activeTab === 'notifications' && '配置 Telegram Bot 及套利机会实时推送信道'}
+                  {activeTab === 'scan' && '设置全链套利轮询间隔与并发请求速率参数'}
+                  {activeTab === 'proxy' && '配置 HTTP/SOCKS5 网络代理以及用于链上快速查询的专用密钥'}
+                  {activeTab === 'stablecoins' && '挑选允许纳入套利计价与闭环计算的主流可靠稳定币白名单'}
+                  {activeTab === 'storage' && '查看 SQLite 数据库存储用量统计及危险维护操作'}
+                </p>
+              </div>
+            </div>
+
+            {/* 表单内容滚动区 */}
+            <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+              {activeTab === 'notifications' && (
             <div className="space-y-4">
               {/* 快捷通道操作栏 */}
               <div className="bg-[var(--bg-surface)] p-3 rounded-lg border border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-2">
@@ -1339,22 +1393,24 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
             </div>
           )}
         </div>
+          </div>
+        </div>
 
         {/* 底部保存条 */}
-        <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 flex items-center justify-between">
+        <div className="px-5 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 flex items-center justify-between shrink-0">
           <div className="text-[11px] text-[var(--text-muted)]">
-            配置持久化保存至本地系统
+            配置持久化保存至本地 SQLite 数据库
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs cursor-pointer"
+              className="px-4 py-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)] transition text-xs cursor-pointer"
             >
               {tr('setCancel')}
             </button>
             <button
               onClick={handleSave}
-              className="impeccable-btn-primary flex items-center gap-1.5 px-4 py-1.5 text-xs tracking-tight cursor-pointer"
+              className="impeccable-btn-primary flex items-center gap-1.5 px-5 py-1.5 text-xs tracking-tight cursor-pointer"
             >
               {saved ? <Check size={14} /> : <Save size={14} />}
               <span>{saved ? tr('setSaved') : tr('setSave')}</span>
