@@ -1012,21 +1012,22 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
                           return (
                             <tr className="bg-[var(--bg-elevated)]/25">
-                              <td colSpan={9} className="p-4 border-t border-[var(--border-subtle)]">
+                              <td colSpan={9} className="p-4 border-t border-[var(--border-subtle)] max-w-full min-w-0">
+                                <div className="w-full max-w-full min-w-0 space-y-3">
                                 {/* 杀猪盘/高费陷阱池极高风险警告横幅 */}
                                 {(row.netCalc.isTrapPool || liveData?.isTrapPool || liveData?.status === 'TRAP_POOL' || row.poolFeeTrap) && (
-                                  <div className="mb-2.5 p-3 rounded-lg bg-rose-500/15 border border-rose-500/40 flex items-start gap-2.5 text-rose-300">
+                                  <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/40 flex items-start gap-2.5 text-rose-300 min-w-0">
                                     <AlertTriangle size={18} className="text-rose-400 shrink-0 mt-0.5 animate-bounce" />
-                                    <div className="text-xs space-y-1 grow">
-                                      <div className="font-bold text-rose-200 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
+                                    <div className="text-xs space-y-1 grow min-w-0">
+                                      <div className="font-bold text-rose-200 flex items-center justify-between flex-wrap gap-1">
+                                        <div className="flex items-center gap-2 flex-wrap min-w-0">
                                           <span>🚨 严重风控拦截：检测到高费率陷阱流动性池 (Trap Pool / 杀猪盘)</span>
-                                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-rose-600/40 text-rose-100 font-extrabold border border-rose-400/60">
+                                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-rose-600/40 text-rose-100 font-extrabold border border-rose-400/60 shrink-0">
                                             池费高达 {Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0), (liveData?.live?.buyPoolFee || 0), (liveData?.live?.sellPoolFee || 0)) * 100}%
                                           </span>
                                         </div>
                                       </div>
-                                      <div className="text-[11px] leading-relaxed text-rose-200/90 font-mono">
+                                      <div className="text-[11px] leading-relaxed text-rose-200/90 font-mono break-words">
                                         {liveData?.details?.trapWarning || (
                                           <>
                                             <strong>DEX Screener 行情盲区：</strong>DEX Screener 默认未展示此 Uniswap V4 / Hook 池的高额手续费（代币合约虽显示 0% 税，但流动性池 Swap Fee 高达 <strong>{Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0), (liveData?.live?.buyPoolFee || 0), (liveData?.live?.sellPoolFee || 0)) * 100}%</strong>）。
@@ -1039,16 +1040,16 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 )}
 
                                 {/* 链上实时询价打通状态横幅 */}
-                                <div className="mb-2 px-3.5 py-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                  <div className="flex items-center gap-2">
+                                <div className="px-3.5 py-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 min-w-0">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
                                     {isQuoting ? (
-                                      <div className="flex items-center gap-2 text-sky-400 text-xs font-mono">
-                                        <RefreshCw size={13} className="animate-spin text-sky-400" />
+                                      <div className="flex items-center gap-2 text-sky-400 text-xs font-mono min-w-0 flex-wrap">
+                                        <RefreshCw size={13} className="animate-spin text-sky-400 shrink-0" />
                                         <span>1. 正在获取两端 DEX 代币实时现价 ➔ 2. 链上跨链通道费用询价中...</span>
                                       </div>
                                     ) : row.netCalc.isLiveQuote ? (
-                                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                                        <span className="flex items-center gap-1.5 font-bold text-emerald-400">
+                                      <div className="flex flex-wrap items-center gap-2 text-xs min-w-0">
+                                        <span className="flex items-center gap-1.5 font-bold text-emerald-400 shrink-0">
                                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                                           实时询价已打通 ({row.netCalc.route.bridgeName})
                                         </span>
@@ -1225,17 +1226,17 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
                                 {/* 非标准计价代币资产结算与全闭环分析卡片 */}
                                 {row.netCalc.isNonStandardQuote && (
-                                  <div className="mb-3 p-3 rounded-lg bg-[var(--bg-base)] border border-amber-500/30 space-y-2">
+                                  <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-amber-500/30 space-y-2 min-w-0">
                                     <div className="flex items-center justify-between flex-wrap gap-2">
-                                      <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-                                        <Coins size={14} className="text-amber-400" />
-                                        <span>非标准配对资产结算与全闭环分析 ({row.symbol}/{row.buyQuoteSymbol} ➔ {row.symbol}/{row.sellQuoteSymbol})</span>
+                                      <div className="flex items-center gap-2 text-xs font-bold text-amber-300 min-w-0">
+                                        <Coins size={14} className="text-amber-400 shrink-0" />
+                                        <span className="break-words">非标准配对资产结算与全闭环分析 ({row.symbol}/{row.buyQuoteSymbol} ➔ {row.symbol}/{row.sellQuoteSymbol})</span>
                                       </div>
-                                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold shrink-0">
                                         最终结算资产: {row.netCalc.settlementAsset}
                                       </span>
                                     </div>
-                                    <div className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                                    <div className="text-[11px] text-[var(--text-secondary)] leading-relaxed break-words">
                                       {locale === 'zh' ? (
                                         <>
                                           <strong>资产结算穿透：</strong>此机会在卖出端 ({row.sellChainName}) 的交易对为 <strong>{row.symbol}/{row.sellQuoteSymbol}</strong>。
@@ -1256,23 +1257,23 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                         </>
                                       )}
                                     </div>
-                                    <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono">
+                                    <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono min-w-0">
                                       <div className="text-[10px] font-sans font-bold text-[var(--text-primary)]">
                                         {locale === 'zh' ? '双重操盘视角收益测算:' : 'Dual Perspective Calculations:'}
                                       </div>
-                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded">
-                                        <span className="text-[var(--text-secondary)] font-sans">
+                                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded min-w-0">
+                                        <span className="text-[var(--text-secondary)] font-sans break-words">
                                           视角 A · {row.netCalc.settlementAsset} 本位持有者 (直接赚取代币):
                                         </span>
-                                        <span className="font-bold text-amber-300">
+                                        <span className="font-bold text-amber-300 shrink-0">
                                           +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset} (无需额外兑换)
                                         </span>
                                       </div>
-                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded">
-                                        <span className="text-[var(--text-secondary)] font-sans">
+                                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded min-w-0">
+                                        <span className="text-[var(--text-secondary)] font-sans break-words">
                                           视角 B · USD 稳定币全闭环 (USDC ➔ {row.buyQuoteSymbol} ➔ {row.symbol} ➔ 桥 ➔ {row.symbol} ➔ {row.sellQuoteSymbol} ➔ USDC):
                                         </span>
-                                        <span className={`font-bold ${row.netCalc.isProfitableFullCycle ? 'text-[#45c4b0]' : 'text-rose-400'}`}>
+                                        <span className={`font-bold shrink-0 ${row.netCalc.isProfitableFullCycle ? 'text-[#45c4b0]' : 'text-rose-400'}`}>
                                           {row.netCalc.isProfitableFullCycle ? '+' : ''}{usd(row.netCalc.netProfitUsdFullCycle)} ({row.netCalc.netRoiPctFullCycle.toFixed(2)}% ROI)
                                           <span className="text-[9px] text-[var(--text-muted)] font-normal ml-1">
                                             (额外 2x Swap 及主网 Gas 磨损 -{usd(row.netCalc.extraFrictionUsd)})
@@ -1283,19 +1284,19 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   </div>
                                 )}
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-w-0">
                                   {/* 执行流水线 */}
-                                  <div className="space-y-2">
+                                  <div className="space-y-2 min-w-0">
                                     <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                                      <Sparkles size={13} className="text-[#f5c042]" />
-                                      <span>{tr('dmExecutionPlan')}</span>
+                                      <Sparkles size={13} className="text-[#f5c042] shrink-0" />
+                                      <span className="truncate">{tr('dmExecutionPlan')}</span>
                                     </div>
-                                    <div className="space-y-1.5 text-[11px]">
-                                      <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)]">
-                                        <div>
+                                    <div className="space-y-1.5 text-[11px] min-w-0">
+                                      <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] gap-2 min-w-0">
+                                        <div className="min-w-0 flex-1">
                                           <span className="text-[var(--text-muted)] font-mono">1. 买入: </span>
-                                          <span className="font-semibold text-[var(--text-primary)]">{row.buyChainName} · {row.buyDex}{row.buyQuoteSymbol ? ` (${row.symbol}/${row.buyQuoteSymbol})` : ''}</span>
-                                          <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5">
+                                          <span className="font-semibold text-[var(--text-primary)] break-words">{row.buyChainName} · {row.buyDex}{row.buyQuoteSymbol ? ` (${row.symbol}/${row.buyQuoteSymbol})` : ''}</span>
+                                          <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 break-words">
                                             投入 <span className="text-[#f5c042] font-bold">${capitalUsd} USD</span>
                                             {row.netCalc.isNonStandardQuote && (
                                               <span> (折合 ~{((capitalUsd / (row.buyQuotePriceUsd || 1))).toLocaleString(undefined, { maximumFractionDigits: 1 })} {row.buyQuoteSymbol})</span>
@@ -1303,49 +1304,49 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                           </div>
                                         </div>
                                         {row.buyUrl && (
-                                          <a href={row.buyUrl} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] hover:text-[#f5c042] text-[10px] flex items-center gap-1 border border-[var(--border-subtle)]">
+                                          <a href={row.buyUrl} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] hover:text-[#f5c042] text-[10px] flex items-center gap-1 border border-[var(--border-subtle)] shrink-0">
                                             <span>DEX</span>
                                             <ExternalLink size={10} />
                                           </a>
                                         )}
                                       </div>
 
-                                      <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)]">
-                                        <div>
-                                          <div className="flex items-center gap-1.5">
+                                      <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] gap-2 min-w-0">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
                                             <span className="text-[var(--text-muted)] font-mono">2. 跨链: </span>
                                             <span className="font-semibold text-[#45c4b0]">{row.netCalc.route.bridgeName}</span>
                                             {row.netCalc.isLiveQuote && (
-                                              <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                              <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
                                                 LIVE
                                               </span>
                                             )}
                                           </div>
-                                          <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5">
+                                          <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 break-words">
                                             转移 <span className="text-[var(--text-primary)] font-bold">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> {row.symbol} ➔ ~{row.netCalc.route.etaMinutes}m · 损耗 ~{usd(row.netCalc.estGasUsd + row.netCalc.estBridgeFeeUsd)}
                                           </div>
                                         </div>
-                                        <a href={row.netCalc.route.bridgeUrl} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] hover:text-[#45c4b0] text-[10px] flex items-center gap-1 border border-[var(--border-subtle)]">
+                                        <a href={row.netCalc.route.bridgeUrl} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] hover:text-[#45c4b0] text-[10px] flex items-center gap-1 border border-[var(--border-subtle)] shrink-0">
                                           <span>Bridge</span>
                                           <ExternalLink size={10} />
                                         </a>
                                       </div>
 
-                                      <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)]">
-                                        <div>
+                                      <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] gap-2 min-w-0">
+                                        <div className="min-w-0 flex-1">
                                           <span className="text-[var(--text-muted)] font-mono">3. 卖出: </span>
-                                          <span className="font-semibold text-[var(--text-primary)]">{row.sellChainName} · {row.sellDex}{row.sellQuoteSymbol ? ` (${row.symbol}/${row.sellQuoteSymbol})` : ''}</span>
-                                          <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5">
+                                          <span className="font-semibold text-[var(--text-primary)] break-words">{row.sellChainName} · {row.sellDex}{row.sellQuoteSymbol ? ` (${row.symbol}/${row.sellQuoteSymbol})` : ''}</span>
+                                          <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 break-words">
                                             卖出全部代币 ➔ 变现回款 <span className="text-[#45c4b0] font-bold">{usd(row.netCalc.grossRevenueUsd)} USD</span> (单价 {usd(row.sellPrice)})
                                             {row.netCalc.isNonStandardQuote && (
-                                              <div className="text-[9px] text-amber-300 font-mono mt-0.5">
+                                              <div className="text-[9px] text-amber-300 font-mono mt-0.5 break-words">
                                                 ⚠️ 到账结算资产为 ~{((row.netCalc.grossRevenueUsd / (row.sellQuotePriceUsd || 1))).toLocaleString(undefined, { maximumFractionDigits: 1 })} {row.sellQuoteSymbol} (非稳定币)
                                               </div>
                                             )}
                                           </div>
                                         </div>
                                         {row.sellUrl && (
-                                          <a href={row.sellUrl} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] hover:text-[#f5c042] text-[10px] flex items-center gap-1 border border-[var(--border-subtle)]">
+                                          <a href={row.sellUrl} target="_blank" rel="noreferrer" className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] hover:text-[#f5c042] text-[10px] flex items-center gap-1 border border-[var(--border-subtle)] shrink-0">
                                             <span>DEX</span>
                                             <ExternalLink size={10} />
                                           </a>
@@ -1355,12 +1356,12 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   </div>
 
                                   {/* 全链路成本与收益精算 */}
-                                  <div className="space-y-2">
+                                  <div className="space-y-2 min-w-0">
                                     <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                                      <DollarSign size={13} className="text-[#45c4b0]" />
-                                      <span>{tr('dmCostBreakdown')} (${capitalUsd} USD 现金本金)</span>
+                                      <DollarSign size={13} className="text-[#45c4b0] shrink-0" />
+                                      <span className="truncate">{tr('dmCostBreakdown')} (${capitalUsd} USD)</span>
                                     </div>
-                                    <div className="p-2.5 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono-num">
+                                    <div className="p-2.5 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono-num min-w-0">
                                       <div className="flex justify-between text-[var(--text-secondary)]">
                                         <span>投入本金:</span>
                                         <span className="text-[var(--text-primary)] font-semibold">{usd(capitalUsd)}</span>
@@ -1395,17 +1396,17 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                         <span>{tr('dmEstSlippage')} ({row.netCalc.slippagePct.toFixed(2)}%):</span>
                                         <span className="font-mono-num">-{usd(row.netCalc.estSlippageUsd)}</span>
                                       </div>
-                                      <div className="flex justify-between text-[var(--text-muted)] text-[10px]">
-                                        <span className="flex items-center gap-1">
-                                          <span>DEX 流动性池手续费:</span>
-                                          <span className="text-[9px] font-mono opacity-80">
+                                      <div className="flex justify-between items-center text-[var(--text-muted)] text-[10px] gap-1">
+                                        <span className="flex items-center gap-1 min-w-0 flex-wrap">
+                                          <span className="truncate">DEX 池手续费:</span>
+                                          <span className="text-[9px] font-mono opacity-80 whitespace-nowrap">
                                             (买 {(row.netCalc.buyPoolFeeRate * 100).toFixed(1)}% / 卖 {(row.netCalc.sellPoolFeeRate * 100).toFixed(1)}%)
                                           </span>
                                           {row.netCalc.isTrapPool && (
-                                            <span className="px-1 rounded text-[8px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30">高费陷阱</span>
+                                            <span className="px-1 rounded text-[8px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 whitespace-nowrap">高费陷阱</span>
                                           )}
                                         </span>
-                                        <span className={`font-mono-num font-semibold ${row.netCalc.isTrapPool ? 'text-rose-400 font-bold' : 'text-[var(--text-primary)]'}`}>
+                                        <span className={`font-mono-num font-semibold shrink-0 ${row.netCalc.isTrapPool ? 'text-rose-400 font-bold' : 'text-[var(--text-primary)]'}`}>
                                           -{usd(row.netCalc.estDexSwapFeesUsd)}
                                         </span>
                                       </div>
@@ -1430,7 +1431,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       </div>
                                       {/* 非标准计价全闭环核算 */}
                                       {row.netCalc.isNonStandardQuote && (
-                                        <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] space-y-1 bg-amber-500/10 p-2 rounded text-[10px]">
+                                        <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] space-y-1 bg-amber-500/10 p-2 rounded text-[10px] min-w-0">
                                           <div className="font-bold text-amber-300 flex items-center justify-between">
                                             <span>结算产出与闭环核算:</span>
                                             <span className="font-mono">产出: {row.netCalc.settlementAsset}</span>
@@ -1455,218 +1456,221 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       )}
                                       {/* 实时桥费明细项 */}
                                       {liveData?.details?.feeDetails && liveData.details.feeDetails.length > 0 && (
-                                        <div className="p-1.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[9px] font-mono text-[var(--text-muted)] space-y-0.5">
+                                        <div className="p-1.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[9px] font-mono text-[var(--text-muted)] space-y-0.5 min-w-0 break-words">
                                           <span className="text-[#45c4b0] font-bold">链上费用明细: </span>
-                                          {liveData.details.feeDetails.join(' | ')}
+                                          <span className="break-all">{liveData.details.feeDetails.join(' | ')}</span>
                                         </div>
                                       )}
                                       {/* 币数对照提示框 */}
-                                      <div className="mt-2 p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[10px] text-[var(--text-muted)] leading-relaxed font-sans">
+                                      <div className="mt-2 p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[10px] text-[var(--text-muted)] leading-relaxed font-sans break-words min-w-0">
                                         <span className="text-[#f5c042] font-bold">💡 币数对照：</span>若按数量搬 1,000 个代币，所需本金仅为 <span className="font-mono-num font-bold text-[var(--text-primary)]">{usd(row.netCalc.token1kCost)}</span>，卖出到手 <span className="font-mono-num font-bold text-[var(--text-primary)]">{usd(row.netCalc.token1kRevenue)}</span>，毛利 <span className="font-mono-num font-bold text-[#45c4b0]">+{usd(row.netCalc.token1kProfit)}</span>（回报率同样为 +{row.spreadPct.toFixed(2)}%）。当前测算为按 ${capitalUsd} USD 现金本金（折合 {row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 1 })} 个币）推演。
                                       </div>
                                     </div>
                                   </div>
 
-                                {/* 安全与风控校验 */}
-                                <div className="space-y-2">
-                                  <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                                    <ShieldCheck size={13} className="text-sky-400" />
-                                    <span>{locale === 'zh' ? '风控与裁决审计' : 'Risk & Security Audit'}</span>
-                                  </div>
-                                  <div className="p-2.5 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] space-y-2 text-[11px]">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[var(--text-muted)]">{locale === 'zh' ? '裁决结果:' : 'Verdict:'}</span>
-                                      <VerdictBadge verdict={row.verdict} size="xs" />
+                                  {/* 安全与风控校验 */}
+                                  <div className="space-y-2 min-w-0">
+                                    <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                                      <ShieldCheck size={13} className="text-sky-400 shrink-0" />
+                                      <span className="truncate">{locale === 'zh' ? '风控与裁决审计' : 'Risk & Security Audit'}</span>
                                     </div>
-                                    <div className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
-                                      {row.verdict === 'official' && (
-                                        <span className="text-emerald-400">✓ 官方背书注册表代币，双链合约严格锚定。</span>
-                                      )}
-                                      {row.verdict === 'confirmed' && (
-                                        <span className="text-sky-400">✓ 多源 DEX 流动性交叉核验通过，价差合理。</span>
-                                      )}
-                                      {row.verdict === 'suspicious' && (
-                                        <span className="text-amber-400">⚠ 报价单边偏离过大或单链流动性较浅，注意滑点。</span>
-                                      )}
-                                      {row.verdict === 'fake' && (
-                                        <span className="text-rose-400">✗ 警惕山寨同名貔貅假币，合约地址不匹配。</span>
-                                      )}
-                                    </div>
-
-                                    {/* GoPlus 智能合约貔貅与交易池代码安全体检 */}
-                                    {row.security && (() => {
-                                      const buyFee = liveData?.live?.buyPoolFee ?? row.netCalc.buyPoolFeeRate ?? row.buyPoolFee ?? row.security.buySecurity?.poolFee ?? 0.003;
-                                      const sellFee = liveData?.live?.sellPoolFee ?? row.netCalc.sellPoolFeeRate ?? row.sellPoolFee ?? row.security.sellSecurity?.poolFee ?? 0.003;
-                                      const isBuyTrap = buyFee >= 0.05 || !!row.security.buySecurity?.isTrapPool || (row.buyPoolFee != null && row.buyPoolFee >= 0.05);
-                                      const isSellTrap = sellFee >= 0.05 || !!row.security.sellSecurity?.isTrapPool || (row.sellPoolFee != null && row.sellPoolFee >= 0.05);
-                                      const hasTrap = isBuyTrap || isSellTrap || row.netCalc.isTrapPool || liveData?.isTrapPool || liveData?.status === 'TRAP_POOL' || row.poolFeeTrap;
-
-                                      return (
-                                        <div className={`p-2 rounded border space-y-1.5 ${
-                                          row.security.isHoneypot
-                                            ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
-                                            : hasTrap
-                                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-200'
-                                            : row.security.riskLevel === 'warning'
-                                            ? 'bg-amber-500/10 border-amber-500/25 text-amber-200'
-                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-                                        }`}>
-                                          <div className="flex items-center justify-between text-[11px] font-sans font-bold">
-                                            <div className="flex items-center gap-1">
-                                              {(row.security.isHoneypot || hasTrap) ? <ShieldAlert size={12} className="text-rose-400" /> : <ShieldCheck size={12} className="text-emerald-400" />}
-                                              <span>GoPlus & DEX 交易池安全审计:</span>
-                                            </div>
-                                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${
-                                              row.security.isHoneypot
-                                                ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse'
-                                                : hasTrap
-                                                ? 'bg-rose-600/30 text-rose-200 font-bold animate-pulse border border-rose-500/40'
-                                                : row.security.riskLevel === 'warning'
-                                                ? 'bg-amber-500/20 text-amber-300'
-                                                : 'bg-emerald-500/20 text-emerald-300'
-                                            }`}>
-                                              {row.security.isHoneypot ? '🚨 貔貅高危' : (hasTrap ? '🚨 高费陷阱池' : (row.security.riskLevel === 'warning' ? '⚠️ 存在风险' : '✓ 代码安全'))}
-                                            </span>
-                                          </div>
-
-                                          <div className="text-[10px] leading-tight font-sans">
-                                            {hasTrap
-                                              ? (liveData?.details?.trapWarning || `交易池手续费高达 ${(Math.max(buyFee, sellFee) * 100).toFixed(1)}%（DEX Screener 默认未展示），扣除池费后无法套利，切勿执行！`)
-                                              : row.security.riskReason}
-                                          </div>
-
-                                          <div className="grid grid-cols-2 gap-2 text-[9px] font-mono pt-1 border-t border-[var(--border-subtle)]/50">
-                                            <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5">
-                                              <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center">
-                                                <span>买入端 ({row.buyChain}):</span>
-                                                {(liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType) && (
-                                                  <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                                                    {liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType}
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <div>貔貅风险: {row.security.buySecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
-                                              <div>代币合约税: 买 {((row.security.buySecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.buySecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
-                                              <div className="flex items-center gap-1">
-                                                <span>池手续费:</span>
-                                                <span className={`font-bold ${isBuyTrap ? 'text-rose-400 animate-pulse font-extrabold' : (buyFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
-                                                  {(buyFee * 100).toFixed(1)}%
-                                                  {isBuyTrap ? ' 🚨陷阱' : ''}
-                                                </span>
-                                              </div>
-                                              <div>开源状态: {row.security.buySecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
-                                            </div>
-                                            <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5">
-                                              <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center">
-                                                <span>卖出端 ({row.sellChain}):</span>
-                                                {(liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType) && (
-                                                  <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                                                    {liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType}
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <div>貔貅风险: {row.security.sellSecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
-                                              <div>代币合约税: 买 {((row.security.sellSecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.sellSecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
-                                              <div className="flex items-center gap-1">
-                                                <span>池手续费:</span>
-                                                <span className={`font-bold ${isSellTrap ? 'text-rose-400 animate-pulse font-extrabold' : (sellFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
-                                                  {(sellFee * 100).toFixed(1)}%
-                                                  {isSellTrap ? ' 🚨陷阱' : ''}
-                                                </span>
-                                              </div>
-                                              <div>开源状态: {row.security.sellSecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-
-                                    {/* 双端流动性深度与 6h/24h 交易量审计 */}
-                                    <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5 text-[10px] font-mono-num">
-                                      <div className="text-[11px] font-bold text-[var(--text-primary)] font-sans flex items-center justify-between">
-                                        <span>{locale === 'zh' ? '双端 Pair 资产储备与换手审计:' : 'Dual-Leg Pair Reserves & Volume:'}</span>
-                                        <span className="text-[#f5c042] font-semibold">{locale === 'zh' ? '建议单笔' : 'Max'} ≤ {usd(row.netCalc.maxSafeCapacityUsd)}</span>
+                                    <div className="p-2.5 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] space-y-2 text-[11px] min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                        <span className="text-[var(--text-muted)] shrink-0">{locale === 'zh' ? '裁决结果:' : 'Verdict:'}</span>
+                                        <VerdictBadge verdict={row.verdict} size="xs" />
                                       </div>
-
-                                      {/* 买入池指标 */}
-                                      <div className="bg-[var(--bg-surface)]/60 rounded p-1.5 space-y-1 border border-[var(--border-subtle)]/50">
-                                        <div className="flex justify-between text-[var(--text-secondary)] font-sans font-semibold text-[10px]">
-                                          <span>{locale === 'zh' ? '买入池' : 'Buy Pool'} ({row.buyChain}):</span>
-                                          <span className="font-mono-num text-[var(--text-primary)]">TVL {usd(row.buyLiquidityUsd || row.minLiquidityUsd)}</span>
-                                        </div>
-                                        {row.buyQuoteReserveUsd !== undefined && (
-                                          <div className="flex justify-between text-[var(--text-muted)] text-[9px] bg-[var(--bg-base)]/50 px-1 py-0.5 rounded">
-                                            <span>Pair 构成:</span>
-                                            <span>{row.symbol} 存量 {usd(row.buyBaseReserveUsd || 0)} | {row.buyQuoteSymbol || 'Quote'} 现金 {usd(row.buyQuoteReserveUsd)} ({((row.buyQuoteRatio || 0.5) * 100).toFixed(0)}%)</span>
-                                          </div>
+                                      <div className="text-[10px] text-[var(--text-secondary)] leading-relaxed break-words">
+                                        {row.verdict === 'official' && (
+                                          <span className="text-emerald-400">✓ 官方背书注册表代币，双链合约严格锚定。</span>
                                         )}
-                                        <div className="flex justify-between text-[var(--text-muted)] text-[9px]">
-                                          <span>24h 成交: {usd(row.buyVolume24h || 0)} ({row.buyTxns24h || 0} 笔)</span>
-                                          <span>6h: {usd(row.buyVolume6h || 0)}</span>
-                                        </div>
-                                      </div>
-
-                                      {/* 卖出池指标 */}
-                                      <div className="bg-[var(--bg-surface)]/60 rounded p-1.5 space-y-1 border border-[var(--border-subtle)]/50">
-                                        <div className="flex justify-between text-[var(--text-secondary)] font-sans font-semibold text-[10px]">
-                                          <span>{locale === 'zh' ? '卖出池' : 'Sell Pool'} ({row.sellChain}):</span>
-                                          <span className="font-mono-num text-[var(--text-primary)]">TVL {usd(row.sellLiquidityUsd || row.minLiquidityUsd)}</span>
-                                        </div>
-                                        {row.sellQuoteReserveUsd !== undefined && (
-                                          <div className="flex justify-between text-[var(--text-muted)] text-[9px] bg-[var(--bg-base)]/50 px-1 py-0.5 rounded">
-                                            <span>Pair 构成:</span>
-                                            <span>
-                                              {row.symbol} {usd(row.sellBaseReserveUsd || 0)} ({((1 - (row.sellQuoteRatio || 0.5)) * 100).toFixed(0)}%) |{' '}
-                                              <strong className={row.sellQuoteReserveUsd < 500 ? 'text-rose-400 font-mono' : 'text-emerald-400 font-mono'}>
-                                                {row.sellQuoteSymbol || 'Quote'} 现金 {usd(row.sellQuoteReserveUsd)} ({((row.sellQuoteRatio || 0.5) * 100).toFixed(1)}%)
-                                              </strong>
-                                            </span>
-                                          </div>
+                                        {row.verdict === 'confirmed' && (
+                                          <span className="text-sky-400">✓ 多源 DEX 流动性交叉核验通过，价差合理。</span>
                                         )}
-                                        <div className="flex justify-between text-[var(--text-muted)] text-[9px]">
-                                          <span>24h 成交: {usd(row.sellVolume24h || 0)} ({row.sellTxns24h || 0} 笔)</span>
-                                          <span>6h: {usd(row.sellVolume6h || 0)}</span>
-                                        </div>
+                                        {row.verdict === 'suspicious' && (
+                                          <span className="text-amber-400">⚠ 报价单边偏离过大或单链流动性较浅，注意滑点。</span>
+                                        )}
+                                        {row.verdict === 'fake' && (
+                                          <span className="text-rose-400">✗ 警惕山寨同名貔貅假币，合约地址不匹配。</span>
+                                        )}
                                       </div>
 
-                                      {/* 冲击率 */}
-                                      <div className="flex justify-between text-[var(--text-muted)] pt-0.5">
-                                        <span>{locale === 'zh' ? '拟投' : 'Impact'} ${capitalUsd} {locale === 'zh' ? '深度冲击率:' : 'impact:'}</span>
-                                        <span className={row.netCalc.liquidityHealth === 'safe' ? 'text-[#45c4b0] font-semibold' : (row.netCalc.liquidityHealth === 'moderate' ? 'text-amber-400 font-semibold' : 'text-rose-400 font-bold')}>
-                                          ~{row.netCalc.poolImpactPct.toFixed(2)}%
-                                        </span>
-                                      </div>
+                                      {/* GoPlus 智能合约貔貅与交易池代码安全体检 */}
+                                      {row.security && (() => {
+                                        const buyFee = liveData?.live?.buyPoolFee ?? row.netCalc.buyPoolFeeRate ?? row.buyPoolFee ?? row.security.buySecurity?.poolFee ?? 0.003;
+                                        const sellFee = liveData?.live?.sellPoolFee ?? row.netCalc.sellPoolFeeRate ?? row.sellPoolFee ?? row.security.sellSecurity?.poolFee ?? 0.003;
+                                        const isBuyTrap = buyFee >= 0.05 || !!row.security.buySecurity?.isTrapPool || (row.buyPoolFee != null && row.buyPoolFee >= 0.05);
+                                        const isSellTrap = sellFee >= 0.05 || !!row.security.sellSecurity?.isTrapPool || (row.sellPoolFee != null && row.sellPoolFee >= 0.05);
+                                        const hasTrap = isBuyTrap || isSellTrap || row.netCalc.isTrapPool || liveData?.isTrapPool || liveData?.status === 'TRAP_POOL' || row.poolFeeTrap;
 
-                                      {/* 动态交易量与死池熔断诊断 */}
-                                      {row.sellQuoteReserveUsd !== undefined && row.sellQuoteReserveUsd < 500 ? (
-                                        <div className="p-2 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] leading-relaxed font-sans">
-                                          ⚠️ <strong>{locale === 'zh' ? '致命单边池 / 现金枯竭陷阱' : 'Illiquid Cash Reserve Drain'}</strong>：{locale === 'zh' ? `卖出池名义 TVL 虽标为 ${usd(row.sellLiquidityUsd || row.minLiquidityUsd)}，但其中 ${((1 - (row.sellQuoteRatio || 0)) * 100).toFixed(1)}% 均为待抛售的 ${row.symbol} 虚标市值！池内真实 ${row.sellQuoteSymbol || 'USDC'} 现金储备仅有 ${usd(row.sellQuoteReserveUsd)}！若您跨链卖出，该池最多只能兑付 ${usd(row.sellQuoteReserveUsd)}，将遭遇 >90% 毁灭性滑点归零！` : `Sell pool quote cash reserve is only ${usd(row.sellQuoteReserveUsd)}! High risk of total loss.`}
+                                        return (
+                                          <div className={`p-2 rounded border space-y-1.5 min-w-0 ${
+                                            row.security.isHoneypot
+                                              ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                                              : hasTrap
+                                              ? 'bg-rose-500/15 border-rose-500/40 text-rose-200'
+                                              : row.security.riskLevel === 'warning'
+                                              ? 'bg-amber-500/10 border-amber-500/25 text-amber-200'
+                                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                                          }`}>
+                                            <div className="flex items-center justify-between text-[11px] font-sans font-bold gap-1 min-w-0">
+                                              <div className="flex items-center gap-1 min-w-0">
+                                                {(row.security.isHoneypot || hasTrap) ? <ShieldAlert size={12} className="text-rose-400 shrink-0" /> : <ShieldCheck size={12} className="text-emerald-400 shrink-0" />}
+                                                <span className="truncate">GoPlus & DEX 交易池安全审计:</span>
+                                              </div>
+                                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono shrink-0 ${
+                                                row.security.isHoneypot
+                                                  ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse'
+                                                  : hasTrap
+                                                  ? 'bg-rose-600/30 text-rose-200 font-bold animate-pulse border border-rose-500/40'
+                                                  : row.security.riskLevel === 'warning'
+                                                  ? 'bg-amber-500/20 text-amber-300'
+                                                  : 'bg-emerald-500/20 text-emerald-300'
+                                              }`}>
+                                                {row.security.isHoneypot ? '🚨 貔貅高危' : (hasTrap ? '🚨 高费陷阱池' : (row.security.riskLevel === 'warning' ? '⚠️ 存在风险' : '✓ 代码安全'))}
+                                              </span>
+                                            </div>
+
+                                            <div className="text-[10px] leading-tight font-sans break-words">
+                                              {hasTrap
+                                                ? (liveData?.details?.trapWarning || `交易池手续费高达 ${(Math.max(buyFee, sellFee) * 100).toFixed(1)}%（DEX Screener 默认未展示），扣除池费后无法套利，切勿执行！`)
+                                                : row.security.riskReason}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9px] font-mono pt-1 border-t border-[var(--border-subtle)]/50 min-w-0">
+                                              <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5 min-w-0">
+                                                <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center gap-1 min-w-0">
+                                                  <span className="shrink-0">买入端 ({row.buyChain}):</span>
+                                                  {(liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType) && (
+                                                    <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)] truncate max-w-[95px]" title={liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType}>
+                                                      {liveData?.live?.buyPoolType || row.security.buySecurity?.poolType || row.buyPoolType}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="truncate">貔貅风险: {row.security.buySecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
+                                                <div className="truncate">代币税: 买 {((row.security.buySecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.buySecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
+                                                <div className="flex items-center gap-1">
+                                                  <span>池手续费:</span>
+                                                  <span className={`font-bold ${isBuyTrap ? 'text-rose-400 animate-pulse font-extrabold' : (buyFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                                                    {(buyFee * 100).toFixed(1)}%
+                                                    {isBuyTrap ? ' 🚨陷阱' : ''}
+                                                  </span>
+                                                </div>
+                                                <div className="truncate">开源状态: {row.security.buySecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
+                                              </div>
+                                              <div className="bg-[var(--bg-base)]/60 p-1.5 rounded space-y-0.5 min-w-0">
+                                                <div className="font-sans font-semibold text-[var(--text-secondary)] flex justify-between items-center gap-1 min-w-0">
+                                                  <span className="shrink-0">卖出端 ({row.sellChain}):</span>
+                                                  {(liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType) && (
+                                                    <span className="text-[8px] font-mono px-1 rounded bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)] truncate max-w-[95px]" title={liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType}>
+                                                      {liveData?.live?.sellPoolType || row.security.sellSecurity?.poolType || row.sellPoolType}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="truncate">貔貅风险: {row.security.sellSecurity?.isHoneypot ? '是 ⚠️' : '否 ✓'}</div>
+                                                <div className="truncate">代币税: 买 {((row.security.sellSecurity?.buyTax || 0) * 100).toFixed(1)}% / 卖 {((row.security.sellSecurity?.sellTax || 0) * 100).toFixed(1)}%</div>
+                                                <div className="flex items-center gap-1">
+                                                  <span>池手续费:</span>
+                                                  <span className={`font-bold ${isSellTrap ? 'text-rose-400 animate-pulse font-extrabold' : (sellFee > 0.01 ? 'text-amber-400' : 'text-emerald-400')}`}>
+                                                    {(sellFee * 100).toFixed(1)}%
+                                                    {isSellTrap ? ' 🚨陷阱' : ''}
+                                                  </span>
+                                                </div>
+                                                <div className="truncate">开源状态: {row.security.sellSecurity?.isOpenSource ? '开源 ✓' : '闭源 ⚠️'}</div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+
+                                      {/* 双端流动性深度与 6h/24h 交易量审计 */}
+                                      <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5 text-[10px] font-mono-num min-w-0">
+                                        <div className="text-[11px] font-bold text-[var(--text-primary)] font-sans flex items-center justify-between gap-1 min-w-0">
+                                          <span className="truncate">{locale === 'zh' ? '双端 Pair 资产储备与换手审计:' : 'Dual-Leg Pair Reserves & Volume:'}</span>
+                                          <span className="text-[#f5c042] font-semibold shrink-0">{locale === 'zh' ? '建议单笔' : 'Max'} ≤ {usd(row.netCalc.maxSafeCapacityUsd)}</span>
                                         </div>
-                                      ) : row.sellVolume6h === 0 ? (
-                                        <div className="p-2 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] leading-relaxed font-sans">
-                                          ⚠️ <strong>{locale === 'zh' ? '致命死池告警' : 'Dead Pool Alert'}</strong>：{locale === 'zh' ? '卖出池在近 6 小时内成交量为 $0.00！无真实对手盘买入。表面价差通常是由于挂牌无人交易的“幽灵陈旧挂单”，跨链后极难按此价变现！' : 'Sell pool has $0.00 volume in last 6h! High risk of stale zombie quotes.'}
+
+                                        {/* 买入池指标 */}
+                                        <div className="bg-[var(--bg-surface)]/60 rounded p-1.5 space-y-1 border border-[var(--border-subtle)]/50 min-w-0">
+                                          <div className="flex justify-between text-[var(--text-secondary)] font-sans font-semibold text-[10px]">
+                                            <span>{locale === 'zh' ? '买入池' : 'Buy Pool'} ({row.buyChain}):</span>
+                                            <span className="font-mono-num text-[var(--text-primary)]">TVL {usd(row.buyLiquidityUsd || row.minLiquidityUsd)}</span>
+                                          </div>
+                                          {row.buyQuoteReserveUsd !== undefined && (
+                                            <div className="flex flex-col sm:flex-row sm:justify-between text-[var(--text-muted)] text-[9px] bg-[var(--bg-base)]/50 px-1 py-0.5 rounded gap-0.5 min-w-0">
+                                              <span className="text-[var(--text-secondary)] shrink-0">Pair 构成:</span>
+                                              <span className="truncate" title={`${row.symbol} 存量 ${usd(row.buyBaseReserveUsd || 0)} | ${row.buyQuoteSymbol || 'Quote'} 现金 ${usd(row.buyQuoteReserveUsd)} (${((row.buyQuoteRatio || 0.5) * 100).toFixed(0)}%)`}>
+                                                {row.symbol} {usdCompact(row.buyBaseReserveUsd || 0)} | {row.buyQuoteSymbol || 'Quote'} {usdCompact(row.buyQuoteReserveUsd)} ({((row.buyQuoteRatio || 0.5) * 100).toFixed(0)}%)
+                                              </span>
+                                            </div>
+                                          )}
+                                          <div className="flex justify-between text-[var(--text-muted)] text-[9px]">
+                                            <span>24h 成交: {usdCompact(row.buyVolume24h || 0)} ({row.buyTxns24h || 0} 笔)</span>
+                                            <span>6h: {usdCompact(row.buyVolume6h || 0)}</span>
+                                          </div>
                                         </div>
-                                      ) : row.buyVolume6h === 0 ? (
-                                        <div className="p-2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] leading-relaxed font-sans">
-                                          ⚠️ <strong>{locale === 'zh' ? '换手滞后提示' : 'Low Velocity Warning'}</strong>：{locale === 'zh' ? '买入池在近 6 小时内成交量为 $0.00，价格未随市场行情动态修正，注意潜在实际滑点。' : 'Buy pool has $0 volume in last 6h.'}
+
+                                        {/* 卖出池指标 */}
+                                        <div className="bg-[var(--bg-surface)]/60 rounded p-1.5 space-y-1 border border-[var(--border-subtle)]/50 min-w-0">
+                                          <div className="flex justify-between text-[var(--text-secondary)] font-sans font-semibold text-[10px]">
+                                            <span>{locale === 'zh' ? '卖出池' : 'Sell Pool'} ({row.sellChain}):</span>
+                                            <span className="font-mono-num text-[var(--text-primary)]">TVL {usd(row.sellLiquidityUsd || row.minLiquidityUsd)}</span>
+                                          </div>
+                                          {row.sellQuoteReserveUsd !== undefined && (
+                                            <div className="flex flex-col sm:flex-row sm:justify-between text-[var(--text-muted)] text-[9px] bg-[var(--bg-base)]/50 px-1 py-0.5 rounded gap-0.5 min-w-0">
+                                              <span className="text-[var(--text-secondary)] shrink-0">Pair 构成:</span>
+                                              <span className="truncate" title={`${row.symbol} ${usd(row.sellBaseReserveUsd || 0)} (${((1 - (row.sellQuoteRatio || 0.5)) * 100).toFixed(0)}%) | ${row.sellQuoteSymbol || 'Quote'} 现金 ${usd(row.sellQuoteReserveUsd)} (${((row.sellQuoteRatio || 0.5) * 100).toFixed(0)}%)`}>
+                                                {row.symbol} {usdCompact(row.sellBaseReserveUsd || 0)} |{' '}
+                                                <strong className={row.sellQuoteReserveUsd < 500 ? 'text-rose-400 font-mono' : 'text-emerald-400 font-mono'}>
+                                                  {row.sellQuoteSymbol || 'Quote'} {usdCompact(row.sellQuoteReserveUsd)} ({((row.sellQuoteRatio || 0.5) * 100).toFixed(0)}%)
+                                                </strong>
+                                              </span>
+                                            </div>
+                                          )}
+                                          <div className="flex justify-between text-[var(--text-muted)] text-[9px]">
+                                            <span>24h 成交: {usdCompact(row.sellVolume24h || 0)} ({row.sellTxns24h || 0} 笔)</span>
+                                            <span>6h: {usdCompact(row.sellVolume6h || 0)}</span>
+                                          </div>
                                         </div>
-                                      ) : (row.minVolume24h !== undefined && row.minVolume24h < 500) ? (
-                                        <div className="p-2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] leading-relaxed font-sans">
-                                          ⚠️ <strong>{locale === 'zh' ? '低换手警报' : 'Low Volume Alert'}</strong>：{locale === 'zh' ? `双端短板 24h 成交仅 ${usd(row.minVolume24h)}，出水承接能力脆弱，建议严格控制仓位。` : `24h min volume is only ${usd(row.minVolume24h)}.`}
+
+                                        {/* 冲击率 */}
+                                        <div className="flex justify-between text-[var(--text-muted)] pt-0.5">
+                                          <span>{locale === 'zh' ? '拟投' : 'Impact'} ${capitalUsd} {locale === 'zh' ? '深度冲击率:' : 'impact:'}</span>
+                                          <span className={row.netCalc.liquidityHealth === 'safe' ? 'text-[#45c4b0] font-semibold' : (row.netCalc.liquidityHealth === 'moderate' ? 'text-amber-400 font-semibold' : 'text-rose-400 font-bold')}>
+                                            ~{row.netCalc.poolImpactPct.toFixed(2)}%
+                                          </span>
                                         </div>
-                                      ) : (row.buyVolume24h !== undefined && row.sellVolume24h !== undefined) ? (
-                                        <div className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] leading-snug font-sans">
-                                          ✓ {locale === 'zh' ? `双端池近 6h 均有真实买卖成交（卖端现金储备 ${usd(row.sellQuoteReserveUsd || 0)}，6h 量: ${usd(row.sellVolume6h || 0)}），具备真实流动性出水承接力。` : 'Both pools show active 6h trading activity with real absorption capacity.'}
-                                        </div>
-                                      ) : null}
+
+                                        {/* 动态交易量与死池熔断诊断 */}
+                                        {row.sellQuoteReserveUsd !== undefined && row.sellQuoteReserveUsd < 500 ? (
+                                          <div className="p-2 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] leading-relaxed font-sans break-words min-w-0">
+                                            ⚠️ <strong>{locale === 'zh' ? '致命单边池 / 现金枯竭陷阱' : 'Illiquid Cash Reserve Drain'}</strong>：{locale === 'zh' ? `卖出池名义 TVL 虽标为 ${usd(row.sellLiquidityUsd || row.minLiquidityUsd)}，但其中 ${((1 - (row.sellQuoteRatio || 0)) * 100).toFixed(1)}% 均为待抛售的 ${row.symbol} 虚标市值！池内真实 ${row.sellQuoteSymbol || 'USDC'} 现金储备仅有 ${usd(row.sellQuoteReserveUsd)}！若您跨链卖出，该池最多只能兑付 ${usd(row.sellQuoteReserveUsd)}，将遭遇 >90% 毁灭性滑点归零！` : `Sell pool quote cash reserve is only ${usd(row.sellQuoteReserveUsd)}! High risk of total loss.`}
+                                          </div>
+                                        ) : row.sellVolume6h === 0 ? (
+                                          <div className="p-2 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] leading-relaxed font-sans break-words min-w-0">
+                                            ⚠️ <strong>{locale === 'zh' ? '致命死池告警' : 'Dead Pool Alert'}</strong>：{locale === 'zh' ? '卖出池在近 6 小时内成交量为 $0.00！无真实对手盘买入。表面价差通常是由于挂牌无人交易的“幽灵陈旧挂单”，跨链后极难按此价变现！' : 'Sell pool has $0.00 volume in last 6h! High risk of stale zombie quotes.'}
+                                          </div>
+                                        ) : row.buyVolume6h === 0 ? (
+                                          <div className="p-2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] leading-relaxed font-sans break-words min-w-0">
+                                            ⚠️ <strong>{locale === 'zh' ? '换手滞后提示' : 'Low Velocity Warning'}</strong>：{locale === 'zh' ? '买入池在近 6 小时内成交量为 $0.00，价格未随市场行情动态修正，注意潜在实际滑点。' : 'Buy pool has $0 volume in last 6h.'}
+                                          </div>
+                                        ) : (row.minVolume24h !== undefined && row.minVolume24h < 500) ? (
+                                          <div className="p-2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] leading-relaxed font-sans break-words min-w-0">
+                                            ⚠️ <strong>{locale === 'zh' ? '低换手警报' : 'Low Volume Alert'}</strong>：{locale === 'zh' ? `双端短板 24h 成交仅 ${usd(row.minVolume24h)}，出水承接能力脆弱，建议严格控制仓位。` : `24h min volume is only ${usd(row.minVolume24h)}.`}
+                                          </div>
+                                        ) : (row.buyVolume24h !== undefined && row.sellVolume24h !== undefined) ? (
+                                          <div className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] leading-snug font-sans break-words min-w-0">
+                                            ✓ {locale === 'zh' ? `双端池近 6h 均有真实买卖成交（卖端现金储备 ${usd(row.sellQuoteReserveUsd || 0)}，6h 量: ${usd(row.sellVolume6h || 0)}），具备真实流动性出水承接力。` : 'Both pools show active 6h trading activity with real absorption capacity.'}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                      <button
+                                        onClick={() => onSelectOpp(row)}
+                                        className="w-full py-1.5 rounded bg-[#f5c042] hover:bg-[#ffd24d] text-black font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 mt-2 shrink-0"
+                                      >
+                                        <FileEdit size={12} />
+                                        <span>{locale === 'zh' ? '记录此套利操盘决策' : 'Record Arb Decision'}</span>
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={() => onSelectOpp(row)}
-                                      className="w-full py-1.5 rounded bg-[#f5c042] hover:bg-[#ffd24d] text-black font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 mt-2"
-                                    >
-                                      <FileEdit size={12} />
-                                      <span>{locale === 'zh' ? '记录此套利操盘决策' : 'Record Arb Decision'}</span>
-                                    </button>
                                   </div>
                                 </div>
                               </div>
