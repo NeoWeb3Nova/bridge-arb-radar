@@ -8,7 +8,7 @@ import {
   ArrowRight, ExternalLink, Copy, Check, FileEdit, 
   ChevronDown, ChevronUp, Search, Filter, ArrowUpDown, 
   Sparkles, ShieldCheck, ShieldAlert, Layers, LayoutGrid, Table, DollarSign,
-  TrendingUp, CheckCircle, AlertTriangle, RefreshCw, Clock, X
+  TrendingUp, CheckCircle, AlertTriangle, RefreshCw, Clock, X, Coins
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 
@@ -23,6 +23,7 @@ interface Props {
 type SortField = 'score' | 'netProfit' | 'spread' | 'liquidity' | 'volume' | 'time';
 type SortOrder = 'desc' | 'asc';
 type VerdictFilter = 'all' | 'verified' | 'clean';
+type QuoteFilter = 'all' | 'standard' | 'non_standard';
 
 export const ArbitrageMatrix: React.FC<Props> = ({ 
   opportunities, 
@@ -39,6 +40,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
   const [customCapital, setCustomCapital] = useState<string>('1000');
   const [chainFilter, setChainFilter] = useState<string>('all');
   const [verdictFilter, setVerdictFilter] = useState<VerdictFilter>('all');
+  const [quoteFilter, setQuoteFilter] = useState<QuoteFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('netProfit');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -226,13 +228,29 @@ export const ArbitrageMatrix: React.FC<Props> = ({
           opp.buyBaseReserveUsd,
           opp.security,
           opp.buyPoolFee ?? undefined,
-          opp.sellPoolFee ?? undefined
+          opp.sellPoolFee ?? undefined,
+          undefined,
+          undefined,
+          opp.buyQuoteSymbol,
+          opp.sellQuoteSymbol,
+          opp.buyPriceNative,
+          opp.sellPriceNative,
+          opp.buyQuotePriceUsd,
+          opp.sellQuotePriceUsd
         );
         return {
           ...opp,
           netCalc,
           uniqueKey: key,
         };
+      })
+      .filter((item) => {
+        if (quoteFilter === 'standard') {
+          if (item.netCalc.isNonStandardQuote) return false;
+        } else if (quoteFilter === 'non_standard') {
+          if (!item.netCalc.isNonStandardQuote) return false;
+        }
+        return true;
       })
       .sort((a, b) => {
         let diff = 0;
@@ -447,6 +465,22 @@ export const ArbitrageMatrix: React.FC<Props> = ({
               <option value="verified">{tr('dmFilterVerifiedOnly')}</option>
               <option value="clean">{tr('dmFilterExcludeRisky')}</option>
             </select>
+
+            {/* 计价配对币过滤 */}
+            <select
+              value={quoteFilter}
+              onChange={(e) => setQuoteFilter(e.target.value as QuoteFilter)}
+              className={`bg-[var(--bg-base)] border rounded-md px-2 py-1 text-xs focus:outline-none focus:border-[#f5c042] ${
+                quoteFilter !== 'all'
+                  ? 'border-[#f5c042] text-[#f5c042] font-semibold'
+                  : 'border-[var(--border-subtle)] text-[var(--text-primary)]'
+              }`}
+              title="按计价代币类型筛选套利机会"
+            >
+              <option value="all">{locale === 'zh' ? '全部计价币' : 'All Quote Tokens'}</option>
+              <option value="standard">{locale === 'zh' ? '仅主流配对 (USDT/USDC/ETH)' : 'Standard Only (USDT/USDC/ETH)'}</option>
+              <option value="non_standard">{locale === 'zh' ? '仅小币/非标配对' : 'Non-Standard Quotes Only'}</option>
+            </select>
           </div>
 
           {/* 排序快捷切换 */}
@@ -634,13 +668,30 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   </span>
                                 )
                               )}
-                              {(row.poolFeeTrap || row.netCalc.isTrapPool || (row.buyPoolFee && row.buyPoolFee >= 0.05) || (row.sellPoolFee && row.sellPoolFee >= 0.05)) && (
+                               {(row.poolFeeTrap || row.netCalc.isTrapPool || (row.buyPoolFee && row.buyPoolFee >= 0.05) || (row.sellPoolFee && row.sellPoolFee >= 0.05)) && (
                                 <span 
                                   className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-600/30 text-rose-200 border border-rose-500/50 flex items-center gap-1 animate-pulse"
                                   title={`🚨 高费率陷阱池 (Trap Pool):\n流动性池收取高达 ${Math.max(row.buyPoolFee || 0, row.sellPoolFee || 0) * 100}% 的交易手续费，实际无法获利！`}
                                 >
                                   <AlertTriangle size={10} className="text-rose-400" />
                                   <span>{locale === 'zh' ? `陷阱池 ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%` : `Trap ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%`}</span>
+                                </span>
+                              )}
+                              {row.netCalc.isNonStandardQuote && (
+                                <span 
+                                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+                                  title={`⚠️ 非稳定币结算：卖出变现到手为「${row.netCalc.settlementAsset}」（非USDC/USDT）。若需换回稳定币，需在${row.sellChainName}再进行一次 Swap`}
+                                >
+                                  <Coins size={9} className="text-amber-400" />
+                                  <span>产出: {row.netCalc.settlementAsset}</span>
+                                </span>
+                              )}
+                              {row.netCalc.isCrossQuote && (
+                                <span 
+                                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                                  title={`🔀 跨配对套利：买端池为 ${row.symbol}/${row.buyQuoteSymbol || 'Quote'}，卖端池为 ${row.symbol}/${row.sellQuoteSymbol || 'Quote'}`}
+                                >
+                                  🔀 跨配对
                                 </span>
                               )}
                               {row.decision?.status && (
@@ -681,7 +732,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 {row.buyChain}
                               </span>
                               <span className="text-[11px] text-[var(--text-secondary)] font-medium">
-                                {row.buyDex || 'DEX'}
+                                {row.buyDex || 'DEX'}{row.buyQuoteSymbol ? ` · ${row.symbol}/${row.buyQuoteSymbol}` : ''}
                               </span>
                               {row.netCalc.buyPoolFeeRate >= 0.05 ? (
                                 <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse" title={`⚠️ 高费率池：Swap手续费 ${(row.netCalc.buyPoolFeeRate * 100).toFixed(1)}%`}>
@@ -700,6 +751,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                               {hasLivePrice && (
                                 <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" title="实时代币现货单价">
                                   LIVE
+                                </span>
+                              )}
+                              {row.buyPriceNative !== undefined && row.buyPriceNative !== null && row.buyQuoteSymbol && (
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25" title={`买入原生计价: 1 ${row.symbol} = ${row.buyPriceNative.toFixed(4)} ${row.buyQuoteSymbol}`}>
+                                  1={row.buyPriceNative.toFixed(2)}{row.buyQuoteSymbol}
                                 </span>
                               )}
                               {row.buyAddress && (
@@ -755,7 +811,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 {row.sellChain}
                               </span>
                               <span className="text-[11px] text-[var(--text-secondary)] font-medium">
-                                {row.sellDex || 'DEX'}
+                                {row.sellDex || 'DEX'}{row.sellQuoteSymbol ? ` · ${row.symbol}/${row.sellQuoteSymbol}` : ''}
                               </span>
                               {row.netCalc.sellPoolFeeRate >= 0.05 ? (
                                 <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse" title={`⚠️ 高费率池：Swap手续费 ${(row.netCalc.sellPoolFeeRate * 100).toFixed(1)}%`}>
@@ -774,6 +830,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                               {hasLivePrice && (
                                 <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" title="实时代币现货单价">
                                   LIVE
+                                </span>
+                              )}
+                              {row.sellPriceNative !== undefined && row.sellPriceNative !== null && row.sellQuoteSymbol && (
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25" title={`卖出原生计价: 1 ${row.symbol} = ${row.sellPriceNative.toFixed(4)} ${row.sellQuoteSymbol}`}>
+                                  1={row.sellPriceNative.toFixed(2)}{row.sellQuoteSymbol}
                                 </span>
                               )}
                               {row.sellAddress && (
@@ -806,14 +867,35 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                             <div className={`font-bold text-xs ${currentSpreadPct <= 0 ? 'text-rose-400 animate-pulse' : 'text-[#f5c042]'}`}>
                               {currentSpreadPct <= 0 ? `🚨 倒挂 ${currentSpreadPct.toFixed(2)}%` : `+${currentSpreadPct.toFixed(2)}%`}
                             </div>
-                            <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                              Δ {row.netCalc.priceDelta >= 0 ? '+' : ''}{usd(row.netCalc.priceDelta)}
-                            </div>
+                            {row.netCalc.isNonStandardQuote && row.netCalc.quoteTokenSpreadPct !== null ? (
+                              <div className="text-[10px] text-amber-300 font-bold mt-0.5" title={`基于实际结算币(${row.netCalc.settlementAsset})计算的真实利差（消除跨链计价币本身的合成汇率偏差）`}>
+                                真实: +{row.netCalc.quoteTokenSpreadPct.toFixed(2)}% {row.netCalc.settlementAsset}
+                              </div>
+                            ) : (
+                              <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                                Δ {row.netCalc.priceDelta >= 0 ? '+' : ''}{usd(row.netCalc.priceDelta)}
+                              </div>
+                            )}
                           </td>
 
                           {/* 6. 预估净利 */}
                           <td className="py-2.5 px-3 whitespace-nowrap text-right font-mono-num">
-                            {isNetPositive ? (
+                            {row.netCalc.isNonStandardQuote ? (
+                              <div>
+                                <div className="font-bold text-xs text-amber-300 font-mono">
+                                  +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset}本位
+                                </div>
+                                {row.netCalc.isProfitableFullCycle ? (
+                                  <div className="text-[10px] text-[#45c4b0] font-semibold mt-0.5" title={`投入 $${capitalUsd} USDC 全闭环 (含2次额外Swap及主网Gas) 净得: +${usd(row.netCalc.netProfitUsdFullCycle)}`}>
+                                    USD全闭环: +{usd(row.netCalc.netProfitUsdFullCycle)}
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-rose-400 font-semibold mt-0.5" title={`投入 $${capitalUsd} USDC 全闭环: 额外兑换与主网Gas磨损 -$${row.netCalc.extraFrictionUsd}，导致净亏损 ${usd(row.netCalc.netProfitUsdFullCycle)}`}>
+                                    USD全闭环: {usd(row.netCalc.netProfitUsdFullCycle)} 倒挂
+                                  </div>
+                                )}
+                              </div>
+                            ) : isNetPositive ? (
                               <div>
                                 <div className="font-bold text-xs text-[#45c4b0]">
                                   +{usd(row.netCalc.netProfitUsd)}
@@ -1141,6 +1223,66 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   </div>
                                 </div>
 
+                                {/* 非标准计价代币资产结算与全闭环分析卡片 */}
+                                {row.netCalc.isNonStandardQuote && (
+                                  <div className="mb-3 p-3 rounded-lg bg-[var(--bg-base)] border border-amber-500/30 space-y-2">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                      <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+                                        <Coins size={14} className="text-amber-400" />
+                                        <span>非标准配对资产结算与全闭环分析 ({row.symbol}/{row.buyQuoteSymbol} ➔ {row.symbol}/{row.sellQuoteSymbol})</span>
+                                      </div>
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                                        最终结算资产: {row.netCalc.settlementAsset}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                                      {locale === 'zh' ? (
+                                        <>
+                                          <strong>资产结算穿透：</strong>此机会在卖出端 ({row.sellChainName}) 的交易对为 <strong>{row.symbol}/{row.sellQuoteSymbol}</strong>。
+                                          套利执行后，用户钱包中<strong>实际收到的结算资产为 {row.netCalc.settlementAsset}</strong>（而非 USDT/USDC）。
+                                          {row.netCalc.quoteTokenSpreadPct !== null && (
+                                            <span>
+                                              两端计价代币同为 {row.netCalc.settlementAsset} 时，真实代币本位利差为 <strong className="text-amber-300 font-mono">+{row.netCalc.quoteTokenSpreadPct.toFixed(2)}% {row.netCalc.settlementAsset}</strong>（排除了不同链 {row.netCalc.settlementAsset} 自身合成汇率偏差）。
+                                            </span>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <strong>Settlement Asset Notice:</strong> The sell leg pool is <strong>{row.symbol}/{row.sellQuoteSymbol}</strong>.
+                                          Upon completion, you will hold <strong>{row.netCalc.settlementAsset}</strong> (not USDC/USDT).
+                                          {row.netCalc.quoteTokenSpreadPct !== null && (
+                                            <span> Real native spread is <strong className="text-amber-300 font-mono">+{row.netCalc.quoteTokenSpreadPct.toFixed(2)}% {row.netCalc.settlementAsset}</strong>.</span>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                    <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono">
+                                      <div className="text-[10px] font-sans font-bold text-[var(--text-primary)]">
+                                        {locale === 'zh' ? '双重操盘视角收益测算:' : 'Dual Perspective Calculations:'}
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded">
+                                        <span className="text-[var(--text-secondary)] font-sans">
+                                          视角 A · {row.netCalc.settlementAsset} 本位持有者 (直接赚取代币):
+                                        </span>
+                                        <span className="font-bold text-amber-300">
+                                          +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset} (无需额外兑换)
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded">
+                                        <span className="text-[var(--text-secondary)] font-sans">
+                                          视角 B · USD 稳定币全闭环 (USDC ➔ {row.buyQuoteSymbol} ➔ {row.symbol} ➔ 桥 ➔ {row.symbol} ➔ {row.sellQuoteSymbol} ➔ USDC):
+                                        </span>
+                                        <span className={`font-bold ${row.netCalc.isProfitableFullCycle ? 'text-[#45c4b0]' : 'text-rose-400'}`}>
+                                          {row.netCalc.isProfitableFullCycle ? '+' : ''}{usd(row.netCalc.netProfitUsdFullCycle)} ({row.netCalc.netRoiPctFullCycle.toFixed(2)}% ROI)
+                                          <span className="text-[9px] text-[var(--text-muted)] font-normal ml-1">
+                                            (额外 2x Swap 及主网 Gas 磨损 -{usd(row.netCalc.extraFrictionUsd)})
+                                          </span>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   {/* 执行流水线 */}
                                   <div className="space-y-2">
@@ -1152,9 +1294,12 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)]">
                                         <div>
                                           <span className="text-[var(--text-muted)] font-mono">1. 买入: </span>
-                                          <span className="font-semibold text-[var(--text-primary)]">{row.buyChainName} · {row.buyDex}</span>
+                                          <span className="font-semibold text-[var(--text-primary)]">{row.buyChainName} · {row.buyDex}{row.buyQuoteSymbol ? ` (${row.symbol}/${row.buyQuoteSymbol})` : ''}</span>
                                           <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5">
-                                            投入 <span className="text-[#f5c042] font-bold">${capitalUsd} USD</span> ➔ 买入 <span className="text-[var(--text-primary)] font-bold">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> {row.symbol} (单价 {usd(row.buyPrice)})
+                                            投入 <span className="text-[#f5c042] font-bold">${capitalUsd} USD</span>
+                                            {row.netCalc.isNonStandardQuote && (
+                                              <span> (折合 ~{((capitalUsd / (row.buyQuotePriceUsd || 1))).toLocaleString(undefined, { maximumFractionDigits: 1 })} {row.buyQuoteSymbol})</span>
+                                            )} ➔ 买入 <span className="text-[var(--text-primary)] font-bold">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> {row.symbol} (单价 {usd(row.buyPrice)})
                                           </div>
                                         </div>
                                         {row.buyUrl && (
@@ -1189,9 +1334,14 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)]">
                                         <div>
                                           <span className="text-[var(--text-muted)] font-mono">3. 卖出: </span>
-                                          <span className="font-semibold text-[var(--text-primary)]">{row.sellChainName} · {row.sellDex}</span>
+                                          <span className="font-semibold text-[var(--text-primary)]">{row.sellChainName} · {row.sellDex}{row.sellQuoteSymbol ? ` (${row.symbol}/${row.sellQuoteSymbol})` : ''}</span>
                                           <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5">
                                             卖出全部代币 ➔ 变现回款 <span className="text-[#45c4b0] font-bold">{usd(row.netCalc.grossRevenueUsd)} USD</span> (单价 {usd(row.sellPrice)})
+                                            {row.netCalc.isNonStandardQuote && (
+                                              <div className="text-[9px] text-amber-300 font-mono mt-0.5">
+                                                ⚠️ 到账结算资产为 ~{((row.netCalc.grossRevenueUsd / (row.sellQuotePriceUsd || 1))).toLocaleString(undefined, { maximumFractionDigits: 1 })} {row.sellQuoteSymbol} (非稳定币)
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                         {row.sellUrl && (
@@ -1278,6 +1428,31 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                           {row.netCalc.isProfitable ? '+' : ''}{usd(row.netCalc.netProfitUsd)}
                                         </span>
                                       </div>
+                                      {/* 非标准计价全闭环核算 */}
+                                      {row.netCalc.isNonStandardQuote && (
+                                        <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] space-y-1 bg-amber-500/10 p-2 rounded text-[10px]">
+                                          <div className="font-bold text-amber-300 flex items-center justify-between">
+                                            <span>结算产出与闭环核算:</span>
+                                            <span className="font-mono">产出: {row.netCalc.settlementAsset}</span>
+                                          </div>
+                                          <div className="flex justify-between text-[var(--text-secondary)]">
+                                            <span>① {row.netCalc.settlementAsset} 币本位净利:</span>
+                                            <span className="font-bold text-amber-300">
+                                              +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between text-[var(--text-muted)]">
+                                            <span>② 额外 2x Swap 与主网 Gas (USD闭环):</span>
+                                            <span className="font-mono text-rose-400">-{usd(row.netCalc.extraFrictionUsd)}</span>
+                                          </div>
+                                          <div className="flex justify-between font-bold pt-1 border-t border-amber-500/20">
+                                            <span>USD 全闭环净利:</span>
+                                            <span className={row.netCalc.isProfitableFullCycle ? 'text-[#45c4b0]' : 'text-rose-400'}>
+                                              {row.netCalc.isProfitableFullCycle ? '+' : ''}{usd(row.netCalc.netProfitUsdFullCycle)} ({row.netCalc.netRoiPctFullCycle.toFixed(2)}%)
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
                                       {/* 实时桥费明细项 */}
                                       {liveData?.details?.feeDetails && liveData.details.feeDetails.length > 0 && (
                                         <div className="p-1.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[9px] font-mono text-[var(--text-muted)] space-y-0.5">
@@ -1543,7 +1718,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
       )}
 
       {/* 底部折叠/展开操作条 */}
-      {processedData.length > DEFAULT_FOLD_COUNT && !searchQuery.trim() && chainFilter === 'all' && verdictFilter === 'all' && (
+      {processedData.length > DEFAULT_FOLD_COUNT && !searchQuery.trim() && chainFilter === 'all' && verdictFilter === 'all' && quoteFilter === 'all' && (
         <div className="flex items-center justify-center pt-1 pb-1">
           <button
             type="button"

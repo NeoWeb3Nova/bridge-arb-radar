@@ -56,10 +56,14 @@ export interface OpportunityItem {
   buyQuoteReserveUsd?: number;
   buyQuoteSymbol?: string | null;
   buyQuoteRatio?: number;
+  buyPriceNative?: number | null;
+  buyQuotePriceUsd?: number | null;
   sellBaseReserveUsd?: number;
   sellQuoteReserveUsd?: number;
   sellQuoteSymbol?: string | null;
   sellQuoteRatio?: number;
+  sellPriceNative?: number | null;
+  sellQuotePriceUsd?: number | null;
   buyPairAddress?: string | null;
   sellPairAddress?: string | null;
   buyPoolFee?: number | null;

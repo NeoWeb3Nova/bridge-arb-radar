@@ -2,8 +2,9 @@ import React from 'react';
 import { OpportunityItem } from '../types';
 import { usd, usdCompact, agoSec } from '../utils/format';
 import { VerdictBadge } from './VerdictBadge';
-import { ArrowRight, ExternalLink, Activity, Copy, Check, FileEdit, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ArrowRight, ExternalLink, Activity, Copy, Check, FileEdit, ShieldCheck, ShieldAlert, Coins } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
+import { isStandardQuote } from '../utils/routeEstimator';
 
 interface Props {
   opp: OpportunityItem;
@@ -46,6 +47,15 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
                 {opp.symbol}
               </span>
               <VerdictBadge verdict={opp.verdict} size="xs" />
+              {opp.sellQuoteSymbol && !isStandardQuote(opp.sellQuoteSymbol) && (
+                <span 
+                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+                  title={`⚠️ 结算资产为 ${opp.sellQuoteSymbol}（非USDC/USDT）`}
+                >
+                  <Coins size={9} className="text-amber-400" />
+                  <span>产出: {opp.sellQuoteSymbol}</span>
+                </span>
+              )}
               {opp.security && (
                 opp.security.isHoneypot ? (
                   <span 
@@ -92,10 +102,21 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
               )}
             </div>
             <div className="text-[11px] text-[var(--text-muted)] font-mono-num mt-0.5">
-              {locale === 'zh' ? '1,000 U 现金本金毛利' : 'Est. Profit / 1k USD'}:{' '}
-              <span className="font-bold text-emerald-500">
-                +{usd(grossProfit1k)}
-              </span>
+              {opp.sellQuoteSymbol && !isStandardQuote(opp.sellQuoteSymbol) ? (
+                <span>
+                  {locale === 'zh' ? '结算资产' : 'Settles in'}:{' '}
+                  <span className="font-bold text-amber-300">
+                    +{opp.spreadPct.toFixed(2)}% {opp.sellQuoteSymbol}
+                  </span>
+                </span>
+              ) : (
+                <span>
+                  {locale === 'zh' ? '1,000 U 现金本金毛利' : 'Est. Profit / 1k USD'}:{' '}
+                  <span className="font-bold text-emerald-500">
+                    +{usd(grossProfit1k)}
+                  </span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -129,8 +150,13 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
             <div className="font-mono-num font-bold text-[var(--text-primary)] text-xs truncate">
               {usd(opp.buyPrice)}
             </div>
+            {opp.buyPriceNative !== undefined && opp.buyPriceNative !== null && opp.buyQuoteSymbol && (
+              <div className="text-[9px] text-[var(--text-muted)] font-mono truncate">
+                1={opp.buyPriceNative.toFixed(2)}{opp.buyQuoteSymbol}
+              </div>
+            )}
             <div className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate flex items-center gap-1">
-              <span className="truncate">{opp.buyDex || 'DEX'}</span>
+              <span className="truncate">{opp.buyDex || 'DEX'}{opp.buyQuoteSymbol ? ` · ${opp.symbol}/${opp.buyQuoteSymbol}` : ''}</span>
               {opp.buyAddress && (
                 <button
                   onClick={(e) => handleCopy(e, opp.buyAddress, true)}
@@ -169,8 +195,13 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
             <div className="font-mono-num font-bold text-[var(--text-primary)] text-xs truncate">
               {usd(opp.sellPrice)}
             </div>
+            {opp.sellPriceNative !== undefined && opp.sellPriceNative !== null && opp.sellQuoteSymbol && (
+              <div className="text-[9px] text-[var(--text-muted)] font-mono truncate">
+                1={opp.sellPriceNative.toFixed(2)}{opp.sellQuoteSymbol}
+              </div>
+            )}
             <div className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate flex items-center justify-end gap-1">
-              <span className="truncate">{opp.sellDex || 'DEX'}</span>
+              <span className="truncate">{opp.sellDex || 'DEX'}{opp.sellQuoteSymbol ? ` · ${opp.symbol}/${opp.sellQuoteSymbol}` : ''}</span>
               {opp.sellAddress && (
                 <button
                   onClick={(e) => handleCopy(e, opp.sellAddress, false)}

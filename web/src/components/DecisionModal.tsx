@@ -4,10 +4,11 @@ import { usd, usdCompact, ago } from '../utils/format';
 import { 
   X, Save, Plus, ArrowRight, History, RefreshCw, ExternalLink, 
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, 
-  DollarSign, Activity, Zap, ShieldAlert, ShieldCheck
+  DollarSign, Activity, Zap, ShieldAlert, ShieldCheck, Coins
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 import { VerdictBadge } from './VerdictBadge';
+import { isStandardQuote } from '../utils/routeEstimator';
 
 interface Props {
   item: OpportunityItem | null;
@@ -296,6 +297,22 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
             </div>
           )}
 
+          {/* 非标准计价配对结算提示横幅 */}
+          {item.sellQuoteSymbol && !isStandardQuote(item.sellQuoteSymbol) && (
+            <div className="p-3 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-200 flex items-start gap-2.5">
+              <Coins size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 grow text-xs">
+                <div className="font-bold text-amber-300 flex items-center justify-between">
+                  <span>非标准计价配对结算提示</span>
+                  <span className="font-mono text-[11px]">最终结算资产: {item.sellQuoteSymbol}</span>
+                </div>
+                <div className="text-[11px] text-amber-200/90 leading-relaxed">
+                  卖出端交易池计价币为 <strong className="font-mono text-white">{item.sellQuoteSymbol}</strong>。套利卖出后到账的是 <strong className="font-mono text-white">{item.sellQuoteSymbol}</strong>（而非 USDC/USDT 稳定币）。若需换回稳定币，需在 {item.sellChainName} 额外进行一次兑换。
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 2. 买卖两端现货行情：快照 vs 实时现价深度比对 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)] font-medium">
@@ -314,7 +331,7 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                       买入腿
                     </span>
                     <span className="font-bold text-[var(--text-primary)] text-xs">{item.buyChainName}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono">({live?.buyDex || item.buyDex || 'DEX'})</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">({live?.buyDex || item.buyDex || 'DEX'}{item.buyQuoteSymbol ? ` · ${item.symbol}/${item.buyQuoteSymbol}` : ''})</span>
                   </div>
                   {item.buyUrl && (
                     <a
@@ -335,6 +352,11 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                     <div className="font-mono-num text-lg font-bold text-[var(--text-primary)]">
                       {usd(live?.buyPrice || item.buyPrice)}
                     </div>
+                    {item.buyPriceNative !== undefined && item.buyPriceNative !== null && item.buyQuoteSymbol && (
+                      <div className="text-[10px] text-[var(--text-muted)] font-mono mt-0.5">
+                        1 {item.symbol} = {item.buyPriceNative.toFixed(4)} {item.buyQuoteSymbol}
+                      </div>
+                    )}
                   </div>
                   {drift && drift.buyPriceDeltaPct !== 0 && (
                     <div className="text-right">
@@ -384,7 +406,7 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                       卖出腿
                     </span>
                     <span className="font-bold text-[var(--text-primary)] text-xs">{item.sellChainName}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono">({live?.sellDex || item.sellDex || 'DEX'})</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">({live?.sellDex || item.sellDex || 'DEX'}{item.sellQuoteSymbol ? ` · ${item.symbol}/${item.sellQuoteSymbol}` : ''})</span>
                   </div>
                   {item.sellUrl && (
                     <a
@@ -405,6 +427,11 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                     <div className="font-mono-num text-lg font-bold text-[var(--text-primary)]">
                       {usd(live?.sellPrice || item.sellPrice)}
                     </div>
+                    {item.sellPriceNative !== undefined && item.sellPriceNative !== null && item.sellQuoteSymbol && (
+                      <div className="text-[10px] text-[var(--text-muted)] font-mono mt-0.5">
+                        1 {item.symbol} = {item.sellPriceNative.toFixed(4)} {item.sellQuoteSymbol}
+                      </div>
+                    )}
                   </div>
                   {drift && drift.sellPriceDeltaPct !== 0 && (
                     <div className="text-right">

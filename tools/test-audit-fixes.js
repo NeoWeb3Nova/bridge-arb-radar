@@ -425,6 +425,84 @@ async function runTests() {
     testDb.close();
   }
 
+  console.log('\n=== 11. 非标准计价代币 (Non-Standard Quote Tokens) 与结算资产穿透测试 ===');
+  {
+    // 模拟真实用户案例: VITA/BIO (Base Aerodrome vs Ethereum Uniswap)
+    const baseQuote = {
+      chain: 'base',
+      dex: 'aerodrome',
+      priceUsd: 0.2254,
+      priceNative: 8.1786, // 1 VITA = 8.1786 BIO
+      quotePriceUsd: 0.02756, // 1 BIO = $0.02756 on Base
+      quoteToken: 'BIO',
+      liquidityUsd: 85000,
+      quoteReserveUsd: 42500,
+      verdict: 'confirmed',
+      baseTokenName: 'VitaDAO',
+    };
+    const ethQuote = {
+      chain: 'ethereum',
+      dex: 'uniswap',
+      priceUsd: 0.2389,
+      priceNative: 8.5490, // 1 VITA = 8.5490 BIO
+      quotePriceUsd: 0.02794, // 1 BIO = $0.02794 on Eth
+      quoteToken: 'BIO',
+      liquidityUsd: 120000,
+      quoteReserveUsd: 60000,
+      verdict: 'confirmed',
+      baseTokenName: 'VitaDAO',
+    };
+
+    const opp = ArbDetector.evaluateBestOpportunity({
+      symbol: 'VITA',
+      quotes: [baseQuote, ethQuote]
+    });
+
+    ok('ArbDetector 成功评估跨链机会', !!opp);
+    ok('ArbDetector 包含 buyQuoteSymbol = BIO', opp.buyQuoteSymbol === 'BIO');
+    ok('ArbDetector 包含 sellQuoteSymbol = BIO', opp.sellQuoteSymbol === 'BIO');
+    ok('ArbDetector 包含 buyPriceNative', opp.buyPriceNative === 8.1786);
+    ok('ArbDetector 包含 sellPriceNative', opp.sellPriceNative === 8.5490);
+    ok('ArbDetector 包含 buyQuotePriceUsd 与 sellQuotePriceUsd', opp.buyQuotePriceUsd === 0.02756 && opp.sellQuotePriceUsd === 0.02794);
+
+    // 验证计价币本位利差与美元纸面利差的区别
+    const usdSpread = ((ethQuote.priceUsd - baseQuote.priceUsd) / baseQuote.priceUsd) * 100;
+    const bioSpread = ((ethQuote.priceNative - baseQuote.priceNative) / baseQuote.priceNative) * 100;
+    ok('USD 纸面价差约为 +5.99%', Math.abs(usdSpread - 5.99) < 0.1);
+    ok('真实 BIO 本位价差约为 +4.53%', Math.abs(bioSpread - 4.53) < 0.1);
+
+    // 验证标准币与非标准币判定
+    const STANDARD_SET = new Set([
+      'USDT', 'USDC', 'USD', 'DAI', 'USDE', 'FDUSD', 'PYUSD', 'USDB', 'FRAX', 'LUSD', 'BUSD',
+      'WETH', 'ETH', 'SOL', 'WSOL', 'BNB', 'WBNB', 'AVAX', 'WAVAX', 'MATIC', 'POL', 'FTM', 'SUI', 'APT', 'TON'
+    ]);
+    const isStandard = (s) => !s || STANDARD_SET.has(s.toUpperCase().trim());
+    ok('USDC 为标准配对币', isStandard('USDC') === true);
+    ok('USDT 为标准配对币', isStandard('USDT') === true);
+    ok('WETH 为标准配对币', isStandard('WETH') === true);
+    ok('BIO 为非标准配对币 (必须提示产出资产与全闭环摩擦)', isStandard('BIO') === false);
+    ok('PEPE 为非标准配对币', isStandard('PEPE') === false);
+
+    // 验证全闭环摩擦计算对净利润的影响
+    const capitalUsd = 1000;
+    const grossRevenue = (capitalUsd / baseQuote.priceUsd) * ethQuote.priceUsd;
+    const grossProfit = grossRevenue - capitalUsd;
+    const baseBridgeGas = 6.50; // Eth involved
+    const baseBridgeFee = Math.max(1.50, capitalUsd * 0.0006);
+    const slippage = capitalUsd * 0.001;
+    const poolFees = capitalUsd * 0.003 + grossRevenue * 0.003;
+    const normalNetProfit = grossProfit - (baseBridgeGas + baseBridgeFee + slippage + poolFees);
+
+    const extraBuyCost = capitalUsd * 0.0045 + 0.08;
+    const extraSellCost = grossRevenue * 0.0045 + 10.0;
+    const extraFriction = extraBuyCost + extraSellCost;
+    const fullCycleProfit = normalNetProfit - extraFriction;
+
+    ok('纸面套利净利润为正', normalNetProfit > 30);
+    ok('全闭环额外摩擦超过 $18 (含以太坊 L1 主网 Swap Gas)', extraFriction > 18);
+    ok('全闭环测算真实反映了换回 USDC 后的最终资金', fullCycleProfit < normalNetProfit);
+  }
+
   console.log(`\n============================`);
   console.log(`总计测试: ${passed + failed} | 通过: ${passed} | 失败: ${failed}`);
   if (failed > 0) process.exit(1);

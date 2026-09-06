@@ -67,6 +67,16 @@ export interface BridgeRouteInfo {
   bridgeUrl: string;
 }
 
+export const STANDARD_QUOTE_TOKENS = new Set([
+  'USDT', 'USDC', 'USD', 'DAI', 'USDE', 'FDUSD', 'PYUSD', 'USDB', 'FRAX', 'LUSD', 'BUSD',
+  'WETH', 'ETH', 'SOL', 'WSOL', 'BNB', 'WBNB', 'AVAX', 'WAVAX', 'MATIC', 'POL', 'FTM', 'SUI', 'APT', 'TON'
+]);
+
+export function isStandardQuote(symbol?: string | null): boolean {
+  if (!symbol) return true;
+  return STANDARD_QUOTE_TOKENS.has(symbol.toUpperCase().trim());
+}
+
 export interface ArbNetCalculation {
   capitalUsd: number;
   tokensBought: number;
@@ -101,6 +111,22 @@ export interface ArbNetCalculation {
   scoreGrade: 'S' | 'A' | 'B' | 'C' | 'D';
   scoreBreakdown: ArbScoreBreakdown;
   scoreComment: string;
+
+  // 计价代币与结算资产体系
+  buyQuoteSymbol: string;
+  sellQuoteSymbol: string;
+  settlementAsset: string;
+  isNonStandardQuote: boolean;
+  isCrossQuote: boolean;
+  buyPriceNative?: number;
+  sellPriceNative?: number;
+  quoteTokenSpreadPct: number | null;
+  extraBuySwapCostUsd: number;
+  extraSellSwapCostUsd: number;
+  extraFrictionUsd: number;
+  netProfitUsdFullCycle: number;
+  netRoiPctFullCycle: number;
+  isProfitableFullCycle: boolean;
 }
 
 export interface ArbScoreBreakdown {
@@ -216,7 +242,13 @@ export function calculateNetArb(
   buyPoolFeeRate?: number,
   sellPoolFeeRate?: number,
   buyTokenTaxRate?: number,
-  sellTokenTaxRate?: number
+  sellTokenTaxRate?: number,
+  buyQuoteSymbol?: string | null,
+  sellQuoteSymbol?: string | null,
+  buyPriceNative?: number | null,
+  sellPriceNative?: number | null,
+  buyQuotePriceUsd?: number | null,
+  sellQuotePriceUsd?: number | null
 ): ArbNetCalculation {
   const defaultRoute = resolveBridgeRoute(buyChain, sellChain);
   const route: BridgeRouteInfo = (liveQuote && liveQuote.bridgeName) ? {
@@ -332,6 +364,50 @@ export function calculateNetArb(
   const netRoiPct = (netProfitUsd / capitalUsd) * 100;
   const isProfitable = netProfitUsd > 0 && !isTrapPool;
 
+  // 计价代币与结算资产分析
+  const bQuote = (buyQuoteSymbol || 'USDC').toUpperCase().trim();
+  const sQuote = (sellQuoteSymbol || 'USDC').toUpperCase().trim();
+  const settlementAsset = sQuote;
+  const isNonStandardQuote = !isStandardQuote(bQuote) || !isStandardQuote(sQuote);
+  const isCrossQuote = bQuote !== sQuote;
+
+  // 计价币本位利差计算 (Quote-token native spread)
+  let quoteTokenSpreadPct: number | null = null;
+  if (!isCrossQuote) {
+    if (typeof buyPriceNative === 'number' && typeof sellPriceNative === 'number' && buyPriceNative > 0) {
+      quoteTokenSpreadPct = Number((((sellPriceNative - buyPriceNative) / buyPriceNative) * 100).toFixed(2));
+    } else if (typeof buyQuotePriceUsd === 'number' && typeof sellQuotePriceUsd === 'number' && buyQuotePriceUsd > 0 && sellQuotePriceUsd > 0) {
+      const bNative = effectiveBuyPrice / buyQuotePriceUsd;
+      const sNative = effectiveSellPrice / sellQuotePriceUsd;
+      if (bNative > 0) {
+        quoteTokenSpreadPct = Number((((sNative - bNative) / bNative) * 100).toFixed(2));
+      }
+    }
+  }
+
+  // USD 现金全闭环摩擦测算 (USDC ➔ 买端配对币 ➔ 目标代币 ➔ 跨链 ➔ 卖端配对币 ➔ USDC)
+  let extraBuySwapCostUsd = 0;
+  let extraSellSwapCostUsd = 0;
+  let extraFrictionUsd = 0;
+  let netProfitUsdFullCycle = netProfitUsd;
+  let netRoiPctFullCycle = netRoiPct;
+  let isProfitableFullCycle = isProfitable;
+
+  if (isNonStandardQuote) {
+    if (!isStandardQuote(bQuote)) {
+      const buyGasEst = (buyChain || '').toLowerCase() === 'ethereum' ? 8.0 : 0.08;
+      extraBuySwapCostUsd = Number(((capitalUsd * 0.0045) + buyGasEst).toFixed(2));
+    }
+    if (!isStandardQuote(sQuote)) {
+      const sellGasEst = (sellChain || '').toLowerCase() === 'ethereum' ? 10.0 : 0.08;
+      extraSellSwapCostUsd = Number(((grossRevenueUsd * 0.0045) + sellGasEst).toFixed(2));
+    }
+    extraFrictionUsd = Number((extraBuySwapCostUsd + extraSellSwapCostUsd).toFixed(2));
+    netProfitUsdFullCycle = Number((netProfitUsd - extraFrictionUsd).toFixed(2));
+    netRoiPctFullCycle = Number(((netProfitUsdFullCycle / capitalUsd) * 100).toFixed(2));
+    isProfitableFullCycle = netProfitUsdFullCycle > 0 && !isTrapPool;
+  }
+
   // 6. Arbitrage Viability 100-point Composite Score (0~100)
   // 维度1: 净收益空间 (0~40分)
   let profitScore = 0;
@@ -390,6 +466,7 @@ export function calculateNetArb(
   else if (liquidityHealth === 'moderate') penalty += 10;
 
   if (netProfitUsd <= 0) penalty += 30; // 净亏损惩罚
+  else if (isNonStandardQuote && netProfitUsdFullCycle <= 0) penalty += 15; // 非标配对全闭环倒挂
 
   const rawScore = profitScore + liquidityScore + bridgeScore + volumeScore - penalty;
   const score = Math.max(0, Math.min(100, Math.round(rawScore)));
@@ -403,6 +480,8 @@ export function calculateNetArb(
     scoreComment = `高费率陷阱 · 交易池手续费高达 ${(maxFee * 100).toFixed(1)}% (非真实套利)`;
   } else if (isDrained || effectiveSellCash < 500) {
     scoreComment = '高危 · 卖出池现金枯竭';
+  } else if (isNonStandardQuote && netProfitUsdFullCycle <= 0 && netProfitUsd > 0) {
+    scoreComment = `非标配对 · 产出 ${settlementAsset} (USD闭环倒挂)`;
   } else if (score >= 85) {
     scoreComment = '极佳机会 · 净利与池深兼备';
   } else if (score >= 70) {
@@ -459,5 +538,19 @@ export function calculateNetArb(
     scoreGrade,
     scoreBreakdown,
     scoreComment,
+    buyQuoteSymbol: bQuote,
+    sellQuoteSymbol: sQuote,
+    settlementAsset,
+    isNonStandardQuote,
+    isCrossQuote,
+    buyPriceNative: buyPriceNative ?? undefined,
+    sellPriceNative: sellPriceNative ?? undefined,
+    quoteTokenSpreadPct,
+    extraBuySwapCostUsd,
+    extraSellSwapCostUsd,
+    extraFrictionUsd,
+    netProfitUsdFullCycle,
+    netRoiPctFullCycle,
+    isProfitableFullCycle,
   };
 }
