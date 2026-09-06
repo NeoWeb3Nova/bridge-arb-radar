@@ -123,12 +123,16 @@ export const ArbitrageMatrix: React.FC<Props> = ({
     }
   };
 
+  const prevCapitalRef = useRef<number>(capitalUsd);
+
   // Trigger live quote whenever a row is expanded or capitalUsd changes
   useEffect(() => {
     if (!expandedKey) return;
     const opp = opportunities.find((o) => `${o.symbol}-${o.buyChain}-${o.sellChain}` === expandedKey);
     if (opp) {
-      fetchLiveQuote(opp, capitalUsd);
+      const isNewCapital = prevCapitalRef.current !== capitalUsd;
+      prevCapitalRef.current = capitalUsd;
+      fetchLiveQuote(opp, capitalUsd, isNewCapital);
     }
   }, [expandedKey, capitalUsd, opportunities]);
 
@@ -1331,6 +1335,86 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   </div>
                                 )}
 
+                                 {/* 当前标的专属模拟本金与头寸调配栏 (Target Asset Position Sizer) */}
+                                 <div className="p-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-2.5 shadow-sm min-w-0">
+                                   <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                     <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] shrink-0">
+                                       <DollarSign size={14} className="text-[#f5c042]" />
+                                       <span>{locale === 'zh' ? '当前标的模拟本金:' : 'Position Sizer:'}</span>
+                                     </div>
+                                     <div className="flex items-center gap-1 bg-[var(--bg-elevated)] p-1 rounded-md border border-[var(--border-subtle)] shrink-0">
+                                       {[500, 1000, 2500, 5000, 10000].map((c) => (
+                                         <button
+                                           key={c}
+                                           type="button"
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             applyCapital(c);
+                                           }}
+                                           className={`px-2 py-0.5 rounded text-xs font-mono font-bold transition cursor-pointer ${
+                                             capitalUsd === c
+                                               ? 'bg-[#f5c042] text-black shadow-xs font-extrabold'
+                                               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]'
+                                           }`}
+                                         >
+                                           ${c >= 1000 ? `${c / 1000}k` : c}
+                                         </button>
+                                       ))}
+                                       <div className="flex items-center pl-1.5 pr-1 border-l border-[var(--border-subtle)]">
+                                         <span className="text-xs text-[var(--text-muted)] mr-1">$</span>
+                                         <input
+                                           type="number"
+                                           value={customCapital}
+                                           onClick={(e) => e.stopPropagation()}
+                                           onChange={(e) => {
+                                             setCustomCapital(e.target.value);
+                                             const n = parseFloat(e.target.value);
+                                             if (n > 0) applyCapital(n);
+                                           }}
+                                           className="w-16 bg-transparent border-b border-[var(--border-subtle)] text-xs font-mono-num font-bold text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042]"
+                                           placeholder={locale === 'zh' ? '自定义' : 'Custom'}
+                                         />
+                                       </div>
+                                     </div>
+
+                                     {/* 智能池深安全建议本金快捷按钮 (一键采用) */}
+                                     {row.netCalc.maxSafeCapacityUsd > 0 && Math.round(row.netCalc.maxSafeCapacityUsd) !== capitalUsd && (
+                                       <button
+                                         type="button"
+                                         onClick={(e) => {
+                                           e.stopPropagation();
+                                           applyCapital(Math.round(row.netCalc.maxSafeCapacityUsd));
+                                         }}
+                                         className="px-2.5 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-xs font-mono font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                                         title="根据买卖双端池深与换手自动计算的安全容量，点击立即以此本金测算"
+                                       >
+                                         <Sparkles size={12} className="text-[#f5c042]" />
+                                         <span>⚡ 采用池深安全建议: ≤ {usd(row.netCalc.maxSafeCapacityUsd, 0)}</span>
+                                       </button>
+                                     )}
+                                   </div>
+
+                                   {/* 右侧：本金折合币数与冲击率指示 */}
+                                   <div className="flex items-center gap-3 text-xs font-mono text-[var(--text-secondary)] shrink-0 flex-wrap">
+                                     <span>
+                                       搬运折合: <strong className="text-[var(--text-primary)]">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 1 })}</strong> {row.symbol}
+                                     </span>
+                                     <span className="text-[var(--border-subtle)]">|</span>
+                                     <span>
+                                       深度冲击率:{' '}
+                                       <strong className={
+                                         row.netCalc.liquidityHealth === 'safe'
+                                           ? 'text-[#45c4b0]'
+                                           : row.netCalc.liquidityHealth === 'moderate'
+                                           ? 'text-amber-400'
+                                           : 'text-rose-400 font-bold'
+                                       }>
+                                         ~{row.netCalc.poolImpactPct.toFixed(2)}%
+                                       </strong>
+                                     </span>
+                                   </div>
+                                 </div>
+
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-w-0">
                                   {/* 执行流水线 */}
                                   <div className="space-y-2 min-w-0">
@@ -1409,9 +1493,14 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
                                   {/* 全链路成本与收益精算 */}
                                   <div className="space-y-2 min-w-0">
-                                    <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                                      <DollarSign size={13} className="text-[#45c4b0] shrink-0" />
-                                      <span className="truncate">{tr('dmCostBreakdown')} (${capitalUsd} USD)</span>
+                                    <div className="text-xs font-bold text-[var(--text-primary)] flex items-center justify-between gap-1.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <DollarSign size={13} className="text-[#45c4b0] shrink-0" />
+                                        <span className="truncate">{tr('dmCostBreakdown')}</span>
+                                      </div>
+                                      <span className="text-[11px] font-mono text-[#f5c042] font-semibold bg-[#f5c042]/10 px-1.5 py-0.5 rounded border border-[#f5c042]/20 shrink-0">
+                                        本金 {usd(capitalUsd, 0)}
+                                      </span>
                                     </div>
                                     <div className="p-2.5 rounded bg-[var(--bg-base)] border border-[var(--border-subtle)] space-y-1.5 text-[11px] font-mono-num min-w-0">
                                       <div className="flex justify-between text-[var(--text-secondary)]">
@@ -1638,7 +1727,18 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5 text-[10px] font-mono-num min-w-0">
                                         <div className="text-[11px] font-bold text-[var(--text-primary)] font-sans flex items-center justify-between gap-1 min-w-0">
                                           <span className="truncate">{locale === 'zh' ? '双端 Pair 资产储备与换手审计:' : 'Dual-Leg Pair Reserves & Volume:'}</span>
-                                          <span className="text-[#f5c042] font-semibold shrink-0">{locale === 'zh' ? '建议单笔' : 'Max'} ≤ {usd(row.netCalc.maxSafeCapacityUsd)}</span>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              applyCapital(Math.round(row.netCalc.maxSafeCapacityUsd));
+                                            }}
+                                            className="text-[#f5c042] hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30 text-[10px] font-semibold shrink-0 transition cursor-pointer flex items-center gap-1"
+                                            title="点击立即将测算本金切换为建议安全单笔"
+                                          >
+                                            <span>{locale === 'zh' ? '建议单笔' : 'Max'} ≤ {usd(row.netCalc.maxSafeCapacityUsd)}</span>
+                                            <span className="text-[9px] underline opacity-80">(点击采用)</span>
+                                          </button>
                                         </div>
 
                                         {/* 买入池指标 */}
