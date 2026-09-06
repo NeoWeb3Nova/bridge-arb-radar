@@ -286,6 +286,8 @@ const DICT = {
     setResettingBtn: '正在创建备份并重置中...',
     setResetSuccessTitle: '数据库重置成功',
     setResetSuccessDesc: '业务数据已安全清空，系统即将刷新页面重新加载...',
+    setStablecoinsTabTitle: '稳定币白名单',
+    setStablecoinsDesc: '自定义与管理雷达认可的「主流稳定币」。勾选的币种将用于「💵 主流稳定币闭环」过滤及相关安全徽标判定。',
   },
   en: {
     // App header & nav
@@ -570,6 +572,8 @@ const DICT = {
     setResettingBtn: 'Backing up and wiping database...',
     setResetSuccessTitle: 'Database Reset Successfully',
     setResetSuccessDesc: 'Business data has been cleared. Reloading page...',
+    setStablecoinsTabTitle: 'Stablecoins',
+    setStablecoinsDesc: 'Customize and manage verified major stablecoins for the "Stablecoin Loop" filter and security badges.',
   },
 };
 

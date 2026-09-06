@@ -365,6 +365,7 @@ export const App: React.FC = () => {
               filterSymbol={matrixFilterSymbol}
               onClearFilter={() => setMatrixFilterSymbol('')}
               sseConnected={sseConnected}
+              stablecoinsWhitelist={state?.settings?.stablecoins}
             />
 
             {/* 高分聪明钱包 */}
@@ -458,7 +459,11 @@ export const App: React.FC = () => {
       />
 
       {/* 数据源与代理设置弹窗 */}
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal 
+        isOpen={settingsOpen} 
+        onClose={() => setSettingsOpen(false)} 
+        onSaveSuccess={fetchState}
+      />
 
       {/* 实时套利机会浮层告警 */}
       {alertOpportunity && (

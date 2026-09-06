@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { 
   X, Globe, Shield, Save, Check, Bell, Send, 
   Volume2, AlertCircle, CheckCircle2, Sliders, ExternalLink, RefreshCw, Clock,
-  Database, Trash2, AlertTriangle, Download, Loader2
+  Database, Trash2, AlertTriangle, Download, Loader2, Coins, Plus, CheckSquare, Square
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 import { playOpportunitySound, requestNotificationPermission, sendDesktopNotification } from '../utils/notification';
+import { DEFAULT_MAJOR_STABLECOINS } from '../utils/routeEstimator';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSaveSuccess?: () => void;
 }
 
 interface StorageStatus {
@@ -28,9 +30,109 @@ interface StorageStatus {
   };
 }
 
-export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { t: tr } = useI18n();
-  const [activeTab, setActiveTab] = useState<'notifications' | 'scan' | 'proxy' | 'storage'>('notifications');
+interface StablecoinMeta {
+  symbol: string;
+  name: string;
+  issuer: string;
+  badge: string;
+  badgeColor: string;
+  desc: string;
+}
+
+const PRESET_STABLECOINS: StablecoinMeta[] = [
+  {
+    symbol: 'USDT',
+    name: 'Tether USD',
+    issuer: 'Tether Holdings',
+    badge: '全球最大流动性',
+    badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    desc: '全网交易对最广泛，市场占有率第一，跨链流动性底座'
+  },
+  {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    issuer: 'Circle / Coinbase',
+    badge: '合规审计标杆',
+    badgeColor: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+    desc: '贝莱德美债基金托管，受美国多州合规监管，透明度极高'
+  },
+  {
+    symbol: 'USDG',
+    name: 'Global Dollar',
+    issuer: 'Paxos / Robinhood / Kraken',
+    badge: '新加坡 MAS 监管',
+    badgeColor: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+    desc: '全球巨头联合打造的合规美元，星展银行存管，Robinhood/Kraken 深度支持'
+  },
+  {
+    symbol: 'PYUSD',
+    name: 'PayPal USD',
+    issuer: 'PayPal / Paxos',
+    badge: 'NYDFS 牌照',
+    badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+    desc: '全球支付巨头 PayPal 官方合规稳定币，受纽约金融局直接监管'
+  },
+  {
+    symbol: 'FDUSD',
+    name: 'First Digital USD',
+    issuer: 'First Digital Trust',
+    badge: '香港受监管信托',
+    badgeColor: 'bg-teal-500/15 text-teal-400 border-teal-500/30',
+    desc: '香港注册信托公司 100% 隔离存管，Binance 核心免手续费主力币'
+  },
+  {
+    symbol: 'RLUSD',
+    name: 'Ripple USD',
+    issuer: 'Ripple Labs',
+    badge: '企业级合规',
+    badgeColor: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+    desc: '纽约金融局 (NYDFS) 批准，专注机构跨国企业级清算'
+  },
+  {
+    symbol: 'USDS',
+    name: 'Sky Dollar (原 DAI 升级)',
+    issuer: 'Sky Ecosystem (MakerDAO)',
+    badge: '美债 RWA 储备',
+    badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    desc: 'MakerDAO 全新升级代币，含超额加密抵押与合规短期美债储备'
+  },
+  {
+    symbol: 'DAI',
+    name: 'MakerDAO Multi-Collateral DAI',
+    issuer: 'MakerDAO / Sky',
+    badge: '去中心化储备',
+    badgeColor: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+    desc: '历史最悠久、经受数轮牛熊考验的超额抵押去中心化稳定币'
+  },
+  {
+    symbol: 'USDC.E',
+    name: 'Bridged USDC (Official Canonical)',
+    issuer: 'Arbitrum / Avalanche 官方跨链桥',
+    badge: 'L2 官方包装',
+    badgeColor: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+    desc: '各 EVM 链官方桥接的 USDC 包装代币，在链上与原生 USDC 1:1 等值'
+  },
+  {
+    symbol: 'USDCE',
+    name: 'Bridged USDC (Alternative notation)',
+    issuer: 'DEX 常用包装',
+    badge: 'AMM 记账符号',
+    badgeColor: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+    desc: '部分 DEX 流动性池使用的记账符号'
+  },
+  {
+    symbol: 'USDT.E',
+    name: 'Bridged USDT (Official Canonical)',
+    issuer: 'Layer2 官方跨链桥',
+    badge: 'L2 官方包装',
+    badgeColor: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+    desc: '各链官方跨链桥接包装 USDT'
+  },
+];
+
+export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess }) => {
+  const { locale, t: tr } = useI18n();
+  const [activeTab, setActiveTab] = useState<'notifications' | 'scan' | 'proxy' | 'stablecoins' | 'storage'>('notifications');
 
   // Proxy & Keys
   const [proxyUrl, setProxyUrl] = useState('');
@@ -74,6 +176,41 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [tgTestResult, setTgTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [webTestNotice, setWebTestNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Stablecoins Whitelist
+  const [selectedStables, setSelectedStables] = useState<string[]>(DEFAULT_MAJOR_STABLECOINS);
+  const [customStableInput, setCustomStableInput] = useState('');
+
+  const toggleStable = (sym: string) => {
+    const s = sym.toUpperCase().trim();
+    if (selectedStables.includes(s)) {
+      setSelectedStables(selectedStables.filter((x) => x !== s));
+    } else {
+      setSelectedStables([...selectedStables, s]);
+    }
+  };
+
+  const handleAddCustomStable = () => {
+    const s = customStableInput.toUpperCase().trim();
+    if (!s) return;
+    if (!selectedStables.includes(s)) {
+      setSelectedStables([...selectedStables, s]);
+    }
+    setCustomStableInput('');
+  };
+
+  const handleRemoveCustomStable = (sym: string) => {
+    setSelectedStables(selectedStables.filter((x) => x !== sym));
+  };
+
+  const handleResetToDefaultStables = () => {
+    setSelectedStables([...DEFAULT_MAJOR_STABLECOINS]);
+  };
+
+  const handleSelectAllStables = () => {
+    const all = Array.from(new Set([...DEFAULT_MAJOR_STABLECOINS, ...selectedStables]));
+    setSelectedStables(all);
+  };
 
   const checkBotInfo = async (token: string) => {
     if (!token || !token.includes(':')) {
@@ -146,6 +283,10 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             if (token) {
               checkBotInfo(token);
             }
+          }
+
+          if (Array.isArray(s.stablecoins) && s.stablecoins.length > 0) {
+            setSelectedStables(s.stablecoins);
           }
         }
       })
@@ -330,9 +471,13 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             },
             minSpreadPct: !isNaN(parsedSpread) && parsedSpread >= 0 ? parsedSpread : 1.0,
           },
+          stablecoins: selectedStables,
         }),
       });
       setSaved(true);
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
       setTimeout(() => {
         setSaved(false);
         onClose();
@@ -407,6 +552,20 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           >
             <Globe size={14} />
             <span>网络代理与 API 密钥</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('stablecoins')}
+            className={`pb-2 px-3 flex items-center gap-1.5 font-medium border-b-2 transition cursor-pointer ${
+              activeTab === 'stablecoins'
+                ? 'border-[#f5c042] text-[#f5c042]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Coins size={14} />
+            <span>{tr('setStablecoinsTabTitle')}</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              {selectedStables.length}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('storage')}
@@ -866,6 +1025,158 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded px-3 py-1.5 font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
                   />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'stablecoins' && (
+            <div className="space-y-4">
+              {/* 顶部说明与准入准则 */}
+              <div className="p-3 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)]">
+                    <Shield className="text-emerald-400" size={15} />
+                    <span>主流合规稳定币白名单 (Tier-1 Standard)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResetToDefaultStables}
+                      className="px-2 py-0.5 rounded text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-base)] border border-[var(--border-subtle)] hover:border-[#f5c042] transition cursor-pointer"
+                      title="重置为系统默认推荐的标准合规 Tier-1 稳定币"
+                    >
+                      恢复默认
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSelectAllStables}
+                      className="px-2 py-0.5 rounded text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 transition cursor-pointer"
+                    >
+                      全部启用
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                  {tr('setStablecoinsDesc')}
+                </p>
+                <div className="text-[10px] text-[var(--text-muted)] flex items-center gap-1.5 pt-1.5 border-t border-[var(--border-subtle)]/60">
+                  <span className="text-emerald-400 font-bold">✓ 准入基线:</span>
+                  <span>100% 独立信托/美债隔离存管 · 顶级合规监管 (NYDFS/MAS/SFC) · 主流交易所 1:1 出金通道</span>
+                </div>
+              </div>
+
+              {/* 预设 Tier-1 稳定币网格 */}
+              <div className="space-y-2">
+                <div className="text-[11px] font-bold text-[var(--text-secondary)] flex items-center justify-between">
+                  <span>官方预设 Tier-1 稳定币 ({PRESET_STABLECOINS.length})</span>
+                  <span className="font-mono font-normal text-[10px] text-[var(--text-muted)]">
+                    已勾选 {selectedStables.filter((s) => PRESET_STABLECOINS.some((p) => p.symbol === s)).length} / {PRESET_STABLECOINS.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PRESET_STABLECOINS.map((st) => {
+                    const isChecked = selectedStables.includes(st.symbol);
+                    return (
+                      <div
+                        key={st.symbol}
+                        onClick={() => toggleStable(st.symbol)}
+                        className={`p-2.5 rounded-lg border transition cursor-pointer flex flex-col justify-between select-none ${
+                          isChecked
+                            ? 'bg-[var(--bg-elevated)] border-emerald-500/50 shadow-sm'
+                            : 'bg-[var(--bg-base)]/60 border-[var(--border-subtle)] opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1 mb-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                              {st.symbol}
+                            </span>
+                            <span className="text-[10px] text-[var(--text-muted)] truncate">
+                              {st.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${st.badgeColor}`}>
+                              {st.badge}
+                            </span>
+                            {isChecked ? (
+                              <CheckSquare size={14} className="text-emerald-400 shrink-0" />
+                            ) : (
+                              <Square size={14} className="text-[var(--text-muted)] shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-[var(--text-muted)] leading-tight mb-1">
+                          {st.desc}
+                        </div>
+                        <div className="text-[9px] text-[var(--text-muted)] font-mono">
+                          发行/管理: <span className="text-[var(--text-secondary)]">{st.issuer}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 用户自定义扩展稳定币 */}
+              <div className="p-3 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)]">
+                    <Plus size={13} className="text-[#f5c042]" />
+                    <span>自定义添加稳定币 / 自主扩展</span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)]">支持任意代币符号，如 USDE、EURC 等</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={customStableInput}
+                    onChange={(e) => setCustomStableInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomStable();
+                      }
+                    }}
+                    placeholder="输入代币符号 (如 USDE, GHO, EURC)"
+                    className="flex-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] uppercase font-mono placeholder-[var(--text-muted)] focus:outline-none focus:border-[#f5c042]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomStable}
+                    className="px-3 py-1.5 rounded-md bg-[#f5c042] text-black font-bold text-xs hover:bg-[#e5b032] transition cursor-pointer flex items-center gap-1 shrink-0"
+                  >
+                    <Plus size={12} />
+                    <span>添加</span>
+                  </button>
+                </div>
+
+                {/* 活跃的自定义币种列表 */}
+                {selectedStables.filter((s) => !PRESET_STABLECOINS.some((p) => p.symbol === s)).length > 0 && (
+                  <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
+                    <div className="text-[10px] text-[var(--text-secondary)] font-medium">当前已添加的自定义币种:</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedStables
+                        .filter((s) => !PRESET_STABLECOINS.some((p) => p.symbol === s))
+                        .map((sym) => (
+                          <span
+                            key={sym}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono bg-[#f5c042]/10 text-[#f5c042] border border-[#f5c042]/30"
+                          >
+                            <span>{sym}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCustomStable(sym)}
+                              className="text-[var(--text-muted)] hover:text-rose-400 cursor-pointer ml-0.5"
+                              title="移除此币种"
+                            >
+                              <X size={11} />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

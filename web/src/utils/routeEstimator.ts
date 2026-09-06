@@ -72,24 +72,37 @@ export const STANDARD_QUOTE_TOKENS = new Set([
   'WETH', 'ETH', 'SOL', 'WSOL', 'BNB', 'WBNB', 'AVAX', 'WAVAX', 'MATIC', 'POL', 'FTM', 'SUI', 'APT', 'TON'
 ]);
 
-export const MAJOR_STABLECOINS = new Set([
-  'USDT', 'USDC', 'USD', 'DAI', 'USDE', 'FDUSD', 'PYUSD', 'USDB', 'FRAX', 'LUSD', 'BUSD',
-  'TUSD', 'USDD', 'GUSD', 'CRVUSD', 'USDCE', 'USDC.E', 'USDT.E'
-]);
+export const DEFAULT_MAJOR_STABLECOINS: string[] = [
+  'USDT', 'USDC', 'USDG', 'PYUSD', 'FDUSD', 'RLUSD', 'USDS', 'DAI',
+  'USDC.E', 'USDCE', 'USDT.E'
+];
+
+export const MAJOR_STABLECOINS = new Set(DEFAULT_MAJOR_STABLECOINS);
 
 export function isStandardQuote(symbol?: string | null): boolean {
   if (!symbol) return true;
   return STANDARD_QUOTE_TOKENS.has(symbol.toUpperCase().trim());
 }
 
-export function isStablecoin(symbol?: string | null): boolean {
+export function isStablecoin(symbol?: string | null, customWhitelist?: Set<string> | string[]): boolean {
   if (!symbol) return false;
-  return MAJOR_STABLECOINS.has(symbol.toUpperCase().trim());
+  const s = symbol.toUpperCase().trim();
+  if (customWhitelist) {
+    const set = customWhitelist instanceof Set 
+      ? customWhitelist 
+      : new Set(customWhitelist.map((x) => x.toUpperCase().trim()));
+    return set.has(s);
+  }
+  return MAJOR_STABLECOINS.has(s);
 }
 
-export function isStablecoinClosedLoop(buyQuote?: string | null, sellQuote?: string | null): boolean {
+export function isStablecoinClosedLoop(
+  buyQuote?: string | null, 
+  sellQuote?: string | null,
+  customWhitelist?: Set<string> | string[]
+): boolean {
   if (!buyQuote || !sellQuote) return false;
-  return isStablecoin(buyQuote) && isStablecoin(sellQuote);
+  return isStablecoin(buyQuote, customWhitelist) && isStablecoin(sellQuote, customWhitelist);
 }
 
 export interface ArbNetCalculation {
@@ -264,7 +277,8 @@ export function calculateNetArb(
   buyPriceNative?: number | null,
   sellPriceNative?: number | null,
   buyQuotePriceUsd?: number | null,
-  sellQuotePriceUsd?: number | null
+  sellQuotePriceUsd?: number | null,
+  customStablecoins?: string[] | Set<string>
 ): ArbNetCalculation {
   const defaultRoute = resolveBridgeRoute(buyChain, sellChain);
   const route: BridgeRouteInfo = (liveQuote && liveQuote.bridgeName) ? {
@@ -559,7 +573,7 @@ export function calculateNetArb(
     settlementAsset,
     isNonStandardQuote,
     isCrossQuote,
-    isStablecoinClosedLoop: isStablecoin(bQuote) && isStablecoin(sQuote),
+    isStablecoinClosedLoop: isStablecoin(bQuote, customStablecoins) && isStablecoin(sQuote, customStablecoins),
     buyPriceNative: buyPriceNative ?? undefined,
     sellPriceNative: sellPriceNative ?? undefined,
     quoteTokenSpreadPct,

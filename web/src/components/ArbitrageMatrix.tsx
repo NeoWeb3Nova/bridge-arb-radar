@@ -18,6 +18,7 @@ interface Props {
   sseConnected?: boolean;
   filterSymbol?: string;
   onClearFilter?: () => void;
+  stablecoinsWhitelist?: string[];
 }
 
 type SortField = 'score' | 'netProfit' | 'spread' | 'liquidity' | 'volume' | 'time';
@@ -31,6 +32,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
   sseConnected = true,
   filterSymbol,
   onClearFilter,
+  stablecoinsWhitelist,
 }) => {
   const { locale, t: tr } = useI18n();
 
@@ -237,7 +239,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
           opp.buyPriceNative,
           opp.sellPriceNative,
           opp.buyQuotePriceUsd,
-          opp.sellQuotePriceUsd
+          opp.sellQuotePriceUsd,
+          stablecoinsWhitelist
         );
         return {
           ...opp,
@@ -274,7 +277,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         }
         return sortOrder === 'desc' ? -diff : diff;
       });
-  }, [opportunities, searchQuery, chainFilter, verdictFilter, quoteFilter, capitalUsd, sortField, sortOrder, liveQuotes]);
+  }, [opportunities, searchQuery, chainFilter, verdictFilter, quoteFilter, capitalUsd, sortField, sortOrder, liveQuotes, stablecoinsWhitelist]);
 
   // 折叠计算：默认仅渲染 TOP 8 精选标的；搜索/过滤时自动全展开
   const visibleData = useMemo(() => {
@@ -1764,6 +1767,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                 key={opp.uniqueKey}
                 opp={opp}
                 onSelect={(o) => onSelectOpp(o)}
+                stablecoinsWhitelist={stablecoinsWhitelist}
               />
             ))
           )}

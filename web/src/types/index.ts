@@ -295,6 +295,7 @@ export interface AppSettings {
   scan?: { intervalMin?: number; autoScan?: boolean; minSpreadPct?: number };
   endpoints?: Record<string, string>;
   notifications?: NotificationSettings;
+  stablecoins?: string[];
 }
 
 export interface AppState {

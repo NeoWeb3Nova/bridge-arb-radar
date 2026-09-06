@@ -483,22 +483,43 @@ async function runTests() {
     ok('BIO 为非标准配对币 (必须提示产出资产与全闭环摩擦)', isStandard('BIO') === false);
     ok('PEPE 为非标准配对币', isStandard('PEPE') === false);
 
-    // 验证主流稳定币闭环判定
-    const MAJOR_STABLECOINS = new Set([
-      'USDT', 'USDC', 'USD', 'DAI', 'USDE', 'FDUSD', 'PYUSD', 'USDB', 'FRAX', 'LUSD', 'BUSD',
-      'TUSD', 'USDD', 'GUSD', 'CRVUSD', 'USDCE', 'USDC.E', 'USDT.E'
-    ]);
-    const isStable = (s) => !s ? false : MAJOR_STABLECOINS.has(s.toUpperCase().trim());
-    const isStableLoop = (b, s) => Boolean(b && s && isStable(b) && isStable(s));
+    // 验证主流稳定币闭环判定与 Tier-1 机构合规清单 (包含 USDG, RLUSD, USDS, PYUSD 等)
+    const DEFAULT_MAJOR_STABLECOINS = [
+      'USDT', 'USDC', 'USDG', 'PYUSD', 'FDUSD', 'RLUSD', 'USDS', 'DAI',
+      'USDC.E', 'USDCE', 'USDT.E'
+    ];
+    const MAJOR_SET = new Set(DEFAULT_MAJOR_STABLECOINS);
+    const isStable = (s, customList) => {
+      if (!s) return false;
+      const clean = s.toUpperCase().trim();
+      if (customList) {
+        return new Set(customList.map((x) => x.toUpperCase().trim())).has(clean);
+      }
+      return MAJOR_SET.has(clean);
+    };
+    const isStableLoop = (b, s, customList) => Boolean(b && s && isStable(b, customList) && isStable(s, customList));
 
-    ok('USDT 与 USDC 均为稳定币', isStable('USDT') === true && isStable('USDC') === true);
-    ok('WBNB 与 ETH 均不是稳定币', isStable('WBNB') === false && isStable('ETH') === false);
-    ok('BIO 不是稳定币', isStable('BIO') === false);
+    ok('USDT 与 USDC 均为 Tier-1 稳定币', isStable('USDT') === true && isStable('USDC') === true);
+    ok('USDG (Paxos/Robinhood/Kraken 新加坡MAS合规) 正确收录进 Tier-1 稳定币', isStable('USDG') === true);
+    ok('RLUSD (Ripple NYDFS企业合规) 正确收录进 Tier-1 稳定币', isStable('RLUSD') === true);
+    ok('USDS (Sky / 原 DAI 升级版) 正确收录进 Tier-1 稳定币', isStable('USDS') === true);
+    ok('PYUSD 与 FDUSD 正确收录进 Tier-1 稳定币', isStable('PYUSD') === true && isStable('FDUSD') === true);
+    ok('BUSD 僵尸币被坚决从主流白名单移除', isStable('BUSD') === false);
+    ok('TUSD (脱锚信誉破产) 被坚决从主流白名单移除', isStable('TUSD') === false);
+    ok('USDD (波场算法稳定币) 被坚决从主流白名单移除', isStable('USDD') === false);
+    ok('USDE (Ethena基差合约合成币) 被从纯法币闭环中分离移除', isStable('USDE') === false);
     ok('RIVER (USDT ➔ USDC) 正确识别为纯稳定币闭环', isStableLoop('USDT', 'USDC') === true);
+    ok('USDG 跨链对 (USDG ➔ USDC) 正确识别为纯稳定币闭环', isStableLoop('USDG', 'USDC') === true);
     ok('PUFFER (WBNB ➔ ETH) 正确排除在稳定币闭环之外', isStableLoop('WBNB', 'ETH') === false);
     ok('GIV (USDC ➔ OP) 正确排除在稳定币闭环之外', isStableLoop('USDC', 'OP') === false);
     ok('VITA (BIO ➔ BIO) 正确排除在稳定币闭环之外', isStableLoop('BIO', 'BIO') === false);
     ok('XAN (WBTC ➔ USDT) 正确排除在稳定币闭环之外', isStableLoop('WBTC', 'USDT') === false);
+
+    // 验证自定义白名单扩展机制
+    const userCustomWhitelist = ['USDT', 'USDC', 'EURC'];
+    ok('用户自定义扩展白名单支持包含 EURC', isStable('EURC', userCustomWhitelist) === true);
+    ok('用户自定义扩展白名单正确判定 EURC 闭环', isStableLoop('EURC', 'USDC', userCustomWhitelist) === true);
+    ok('未被用户加入的代币仍被正确拒绝', isStableLoop('EURC', 'WETH', userCustomWhitelist) === false);
 
     // 验证全闭环摩擦计算对净利润的影响
     const capitalUsd = 1000;

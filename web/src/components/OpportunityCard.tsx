@@ -9,9 +9,10 @@ import { isStandardQuote, isStablecoinClosedLoop } from '../utils/routeEstimator
 interface Props {
   opp: OpportunityItem;
   onSelect?: (opp: OpportunityItem) => void;
+  stablecoinsWhitelist?: string[];
 }
 
-export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
+export const OpportunityCard: React.FC<Props> = ({ opp, onSelect, stablecoinsWhitelist }) => {
   const { locale } = useI18n();
   const [copiedBuy, setCopiedBuy] = React.useState(false);
   const [copiedSell, setCopiedSell] = React.useState(false);
@@ -47,10 +48,10 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
                 {opp.symbol}
               </span>
               <VerdictBadge verdict={opp.verdict} size="xs" />
-              {isStablecoinClosedLoop(opp.buyQuoteSymbol, opp.sellQuoteSymbol) && (
+              {isStablecoinClosedLoop(opp.buyQuoteSymbol, opp.sellQuoteSymbol, stablecoinsWhitelist) && (
                 <span 
                   className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
-                  title={locale === 'zh' ? '💵 主流稳定币闭环（买卖双端均以 USDT/USDC/DAI 结算）' : '💵 Stablecoin Loop'}
+                  title={locale === 'zh' ? '💵 主流稳定币闭环（买卖双端均以 USDT/USDC/USDG 等结算）' : '💵 Stablecoin Loop'}
                 >
                   <span>{locale === 'zh' ? '💵 稳定币闭环' : '💵 Stable Loop'}</span>
                 </span>
