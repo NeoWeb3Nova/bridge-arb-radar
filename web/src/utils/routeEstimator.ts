@@ -43,7 +43,7 @@ export interface LiveQuoteData {
     sellPriceDeltaPct: number;
     spreadDeltaPct: number;
   };
-  status?: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'TRAP_POOL' | 'UNAVAILABLE';
+  status?: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'TRAP_POOL' | 'UNAVAILABLE' | 'ANOMALY_SPREAD';
   statusMessage?: string;
   ttlSeconds?: number;
   updatedAt?: number;
@@ -108,6 +108,9 @@ export function isStablecoinClosedLoop(
 export interface ArbNetCalculation {
   capitalUsd: number;
   tokensBought: number;
+  effectiveBuyPrice: number;
+  effectiveSellPrice: number;
+  isExtremeSpread?: boolean;
   grossRevenueUsd: number;
   grossProfitUsd: number;
   estGasUsd: number;
@@ -389,10 +392,12 @@ export function calculateNetArb(
   }
 
   // 5. Net Profit & ROI (全链路扣除 Gas + 跨链桥费 + AMM滑点 + 买卖两端池子Swap手续费 + 代币合约税)
+  const isExtremeSpread = effectiveBuyPrice > 0 && (((effectiveSellPrice - effectiveBuyPrice) / effectiveBuyPrice) * 100 > 100);
+  const isAnomaly = liveQuote?.status === 'ANOMALY_SPREAD' || isExtremeSpread;
   const estTotalCostUsd = estGasUsd + estBridgeFeeUsd + estSlippageUsd + estDexSwapFeesUsd + estTokenTaxUsd;
-  const netProfitUsd = grossProfitUsd - estTotalCostUsd;
+  const netProfitUsd = isAnomaly ? 0 : (grossProfitUsd - estTotalCostUsd);
   const netRoiPct = (netProfitUsd / capitalUsd) * 100;
-  const isProfitable = netProfitUsd > 0 && !isTrapPool;
+  const isProfitable = netProfitUsd > 0 && !isTrapPool && !isAnomaly;
 
   // 计价代币与结算资产分析
   const bQuote = (buyQuoteSymbol || 'USDC').toUpperCase().trim();
@@ -435,7 +440,7 @@ export function calculateNetArb(
     extraFrictionUsd = Number((extraBuySwapCostUsd + extraSellSwapCostUsd).toFixed(2));
     netProfitUsdFullCycle = Number((netProfitUsd - extraFrictionUsd).toFixed(2));
     netRoiPctFullCycle = Number(((netProfitUsdFullCycle / capitalUsd) * 100).toFixed(2));
-    isProfitableFullCycle = netProfitUsdFullCycle > 0 && !isTrapPool;
+    isProfitableFullCycle = netProfitUsdFullCycle > 0 && !isTrapPool && !isAnomaly;
   }
 
   // 6. Arbitrage Viability 100-point Composite Score (0~100)
@@ -491,6 +496,9 @@ export function calculateNetArb(
     penalty += 20;
   }
 
+  if (isAnomaly) {
+    penalty += 80;
+  }
   if (isDrained || effectiveSellCash < 500) penalty += 50; // 现金枯竭
   else if (liquidityHealth === 'dangerous') penalty += 25;
   else if (liquidityHealth === 'moderate') penalty += 10;
@@ -503,7 +511,9 @@ export function calculateNetArb(
   const scoreGrade: 'S' | 'A' | 'B' | 'C' | 'D' = score >= 85 ? 'S' : (score >= 70 ? 'A' : (score >= 50 ? 'B' : (score >= 25 ? 'C' : 'D')));
 
   let scoreComment = '普通机会';
-  if (security?.isHoneypot || security?.riskLevel === 'danger') {
+  if (isAnomaly) {
+    scoreComment = '极端价差 · 疑似假币碰撞或异常池 (已熔断)';
+  } else if (security?.isHoneypot || security?.riskLevel === 'danger') {
     scoreComment = `高危 · ${security.riskReason || '智能合约貔貅 (无法卖出或恶意税率)'}`;
   } else if (isTrapPool) {
     const maxFee = Math.max(buyPoolFee, sellPoolFee);
@@ -537,6 +547,9 @@ export function calculateNetArb(
   return {
     capitalUsd,
     tokensBought,
+    effectiveBuyPrice,
+    effectiveSellPrice,
+    isExtremeSpread,
     grossRevenueUsd,
     grossProfitUsd,
     estGasUsd,

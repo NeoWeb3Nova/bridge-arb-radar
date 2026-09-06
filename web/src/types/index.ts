@@ -153,7 +153,7 @@ export interface LiveQuoteResult {
     netYieldPct: number;
     isTrapPool?: boolean;
   } | null;
-  status: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'TRAP_POOL' | 'UNAVAILABLE';
+  status: 'ACTIVE' | 'NARROWED' | 'INVERTED' | 'LIQUIDITY_DROP' | 'TRAP_POOL' | 'UNAVAILABLE' | 'ANOMALY_SPREAD';
   statusMessage: string;
   checkedAt: string;
 }

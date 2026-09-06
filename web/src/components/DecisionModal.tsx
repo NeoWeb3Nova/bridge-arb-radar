@@ -225,6 +225,21 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
         <div className="p-4 overflow-y-auto space-y-4 text-xs">
 
           {/* 1. 实时时效性与风控预警横幅 */}
+          {quoteStatus === 'ANOMALY_SPREAD' && (
+            <div className="p-3.5 rounded-lg bg-rose-500/20 border border-rose-500/60 text-rose-200 flex items-start gap-2.5 animate-pulse">
+              <AlertTriangle size={18} className="text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-1 grow">
+                <div className="font-bold text-xs text-rose-300 flex items-center justify-between">
+                  <span>🚨 极端异常价差 / 假币冲突预警（已触发熔断保护拦截）</span>
+                  <span className="font-mono text-[11px] text-rose-200 font-extrabold">现价差: +{live?.spreadPct.toFixed(2)}%</span>
+                </div>
+                <div className="text-[11px] text-rose-200/90 leading-relaxed">
+                  {liveQuote?.statusMessage || `实时价差严重超出跨链常理 (>100%) 或价格与快照发生剧烈偏移，疑似同名假币冲突、坏账池或流动性抽干，系统已强制熔断保护，切勿盲目入场！`}
+                </div>
+              </div>
+            </div>
+          )}
+
           {quoteStatus === 'TRAP_POOL' && (
             <div className="p-3.5 rounded-lg bg-rose-500/15 border border-rose-500/50 text-rose-200 flex items-start gap-2.5 animate-pulse">
               <AlertTriangle size={18} className="text-rose-400 shrink-0 mt-0.5" />

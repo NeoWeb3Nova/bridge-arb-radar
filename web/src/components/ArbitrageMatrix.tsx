@@ -1064,6 +1064,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                             搬运折合: {liveData.tokenAmount.toLocaleString()} {row.symbol}
                                           </span>
                                         )}
+                                        {liveData?.status === 'ANOMALY_SPREAD' && (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-600/40 text-rose-200 border border-rose-500/60 animate-pulse">
+                                            🚨 极端价差熔断 (假币/池异常)
+                                          </span>
+                                        )}
                                         {liveData?.status === 'TRAP_POOL' && (
                                           <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-600/30 text-rose-200 border border-rose-500/50 animate-pulse">
                                             🚨 陷阱池 (高池费)
@@ -1398,7 +1403,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                             投入 <span className="text-[#f5c042] font-bold">${capitalUsd} USD</span>
                                             {row.netCalc.isNonStandardQuote && (
                                               <span> (折合 ~{((capitalUsd / (row.buyQuotePriceUsd || 1))).toLocaleString(undefined, { maximumFractionDigits: 1 })} {row.buyQuoteSymbol})</span>
-                                            )} ➔ 买入 <span className="text-[var(--text-primary)] font-bold">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> {row.symbol} (单价 {usd(row.buyPrice)})
+                                            )} ➔ 买入 <span className="text-[var(--text-primary)] font-bold">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> {row.symbol} (单价 {usd(row.netCalc.effectiveBuyPrice || row.buyPrice)})
                                           </div>
                                         </div>
                                         {row.buyUrl && (
@@ -1443,7 +1448,12 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                           <span className="text-[var(--text-muted)] font-mono">3. 卖出: </span>
                                           <span className="font-semibold text-[var(--text-primary)] break-words">{row.sellChainName} · {row.sellDex}{row.sellQuoteSymbol ? ` (${row.symbol}/${row.sellQuoteSymbol})` : ''}</span>
                                           <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 break-words">
-                                            卖出全部代币 ➔ 变现回款 <span className="text-[#45c4b0] font-bold">{usd(row.netCalc.grossRevenueUsd)} USD</span> (单价 {usd(row.sellPrice)})
+                                            卖出全部代币 ➔ 变现回款 <span className="text-[#45c4b0] font-bold">{usd(row.netCalc.grossRevenueUsd)} USD</span> (单价 {usd(row.netCalc.effectiveSellPrice || row.sellPrice)})
+                                            {row.netCalc.isExtremeSpread && (
+                                              <div className="text-[9px] text-rose-400 font-mono mt-0.5 break-words font-bold">
+                                                🚨 极端异常价差警报：买卖价差超 100%，疑似同名资产冲突或脱锚异常池！
+                                              </div>
+                                            )}
                                             {row.netCalc.isStablecoinClosedLoop && (
                                               <div className="text-[9px] text-emerald-400 font-mono mt-0.5 break-words">
                                                 ✓ 纯稳定币闭环: 最终变现到账为稳定币 {row.netCalc.sellQuoteSymbol} (直接保值闭环，无汇率波动风险)
