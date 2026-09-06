@@ -270,55 +270,74 @@ export const App: React.FC = () => {
             {/* 核心指标展台 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
               {(() => {
-                const transfersCount = state?.counts.transfers || 0;
-                const maxTransfers = state?.counts.maxTransfers || 8000;
-                const isCapped = transfersCount >= maxTransfers;
+                const tokensCount = state?.counts.tokens || 0;
+                const unknownCount = state?.counts.unknownTokens || 0;
+                const verifiedCount = Math.max(0, tokensCount - unknownCount);
                 return (
                   <div
-                    className="terminal-panel p-4 cursor-default relative group"
-                    title={isCapped ? tr('mTransfersCappedTooltip') : undefined}
+                    className="terminal-panel p-4 cursor-pointer hover:border-[#f5c042]/40 transition group"
+                    onClick={() => setTab('tokens')}
+                    title={tr('mTokensTooltip')}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight">{tr('mTransfers')}</div>
-                      {isCapped && (
+                      <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight">{tr('mTokens')}</div>
+                      {unknownCount > 0 ? (
                         <span
-                          className="px-1.5 py-0.5 text-[9px] font-semibold bg-[#f5c042]/15 text-[#f5c042] border border-[#f5c042]/30 rounded tracking-tight cursor-help"
-                          title={tr('mTransfersCappedTooltip')}
+                          className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded tracking-tight"
+                          title={`${unknownCount} 个待核验链上新币`}
                         >
-                          {tr('mTransfersCappedBadge')}
+                          {unknownCount} {tr('mTokensUnknown')}
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded tracking-tight">
+                          {tr('mTokensVerified')}
                         </span>
                       )}
                     </div>
                     <div className="font-mono-num text-2xl font-bold text-[var(--text-primary)] flex items-baseline gap-1.5">
-                      {transfersCount.toLocaleString()}
-                      {isCapped && (
-                        <span className="text-xs font-normal text-[var(--text-muted)]">
-                          / {maxTransfers.toLocaleString()}
-                        </span>
-                      )}
+                      {tokensCount.toLocaleString()}
+                      <span className="text-xs font-normal text-[var(--text-muted)]">
+                        {tr('mTokensUnit')}
+                      </span>
                     </div>
                     <div className="text-[10px] text-[var(--text-muted)] mt-1 flex items-center justify-between">
-                      <span>{tr('mTransfersSub')} {state?.counts.transfers24h || 0} {tr('mTransfersUnit')}</span>
-                      {isCapped && (
-                        <span className="text-[10px] text-[var(--text-muted)] opacity-80 cursor-help" title={tr('mTransfersCappedTooltip')}>
-                          {tr('mTransfersRolling')}
-                        </span>
-                      )}
+                      <span className="text-[#45c4b0]">{tr('mTokensSub')}: {verifiedCount.toLocaleString()} {tr('mTokensUnit')}</span>
+                      <span className="text-[var(--text-muted)] group-hover:text-[#f5c042] transition text-[10px]">
+                        代币库 ➔
+                      </span>
                     </div>
                   </div>
                 );
               })()}
 
-              <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mWallets')}</div>
+              <div 
+                className="terminal-panel p-4 cursor-pointer hover:border-[#45c4b0]/40 transition group"
+                onClick={() => setTab('wallets')}
+                title="点击前往「聪明钱包」查看深度特征画像与评分榜单"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight">{tr('mWallets')}</div>
+                  <span className="text-[10px] text-[var(--text-muted)] group-hover:text-[#45c4b0] transition">
+                    钱包画像 ➔
+                  </span>
+                </div>
                 <div className="font-mono-num text-2xl font-bold text-[var(--text-primary)]">
                   {state?.counts.wallets.toLocaleString() || '0'}
                 </div>
                 <div className="text-[10px] text-[#45c4b0] mt-1">{tr('mWalletsSub')}: {state?.counts.walletsA || 0} {tr('mWalletsUnit')}</div>
               </div>
 
-              <div className="terminal-panel p-4">
-                <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight mb-1">{tr('mOpps')}</div>
+              <div 
+                className="terminal-panel p-4 cursor-pointer hover:border-[#f5c042]/40 transition group"
+                onClick={() => setTab('spread')}
+                title="点击前往「价差矩阵」查看全网实时套利路线与执行明细"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[11px] text-[var(--text-secondary)] font-medium tracking-tight">{tr('mOpps')}</div>
+                  <span className="text-[10px] text-[var(--text-muted)] group-hover:text-[#f5c042] transition">
+                    价差矩阵 ➔
+                  </span>
+                </div>
                 <div className="font-mono-num text-2xl font-bold text-[#f5c042]">
                   {state?.counts.opportunities || '0'}
                 </div>
