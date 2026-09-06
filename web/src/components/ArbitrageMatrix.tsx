@@ -529,59 +529,70 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         <>
           {viewMode === 'table' ? (
         <div className="terminal-panel rounded-lg overflow-hidden border border-[var(--border-subtle)]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[var(--text-primary)]">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full table-fixed min-w-[1020px] text-left text-xs text-[var(--text-primary)]">
+              <colgroup>
+                <col className="w-[15%]" />
+                <col className="w-[6%]" />
+                <col className="w-[15.5%]" />
+                <col className="w-[10.5%]" />
+                <col className="w-[15.5%]" />
+                <col className="w-[8.5%]" />
+                <col className="w-[11.5%]" />
+                <col className="w-[11%]" />
+                <col className="w-[6.5%]" />
+              </colgroup>
               <thead className="bg-[var(--bg-elevated)]/70 text-[var(--text-secondary)] font-medium tracking-tight text-[11px] border-b border-[var(--border-subtle)] select-none">
                 <tr>
                   <th 
                     onClick={() => toggleSort('time')}
                     className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-primary)]"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 truncate">
                       <span>{tr('dmColAsset')}</span>
-                      <ArrowUpDown size={11} className="text-[var(--text-muted)]" />
+                      <ArrowUpDown size={11} className="text-[var(--text-muted)] shrink-0" />
                     </div>
                   </th>
                   <th 
                     onClick={() => toggleSort('score')}
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-primary)] text-center whitespace-nowrap"
+                    className="py-2.5 px-2 cursor-pointer hover:text-[var(--text-primary)] text-center"
                   >
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center gap-1 truncate">
                       <span>{tr('thArbScore')}</span>
-                      <ArrowUpDown size={11} className={sortField === 'score' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
+                      <ArrowUpDown size={11} className={sortField === 'score' ? 'text-[#f5c042] shrink-0' : 'text-[var(--text-muted)] shrink-0'} />
                     </div>
                   </th>
-                  <th className="py-2.5 px-3">{tr('dmColBuyLeg')}</th>
-                  <th className="py-2.5 px-3">{tr('dmColBridgeRoute')}</th>
-                  <th className="py-2.5 px-3">{tr('dmColSellLeg')}</th>
+                  <th className="py-2.5 px-2.5 truncate">{tr('dmColBuyLeg')}</th>
+                  <th className="py-2.5 px-2.5 truncate">{tr('dmColBridgeRoute')}</th>
+                  <th className="py-2.5 px-2.5 truncate">{tr('dmColSellLeg')}</th>
                   <th 
                     onClick={() => toggleSort('spread')}
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-primary)]"
+                    className="py-2.5 px-2 cursor-pointer hover:text-[var(--text-primary)]"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 truncate">
                       <span>{tr('dmColSpread')}</span>
-                      <ArrowUpDown size={11} className="text-[var(--text-muted)]" />
+                      <ArrowUpDown size={11} className="text-[var(--text-muted)] shrink-0" />
                     </div>
                   </th>
                   <th 
                     onClick={() => toggleSort('netProfit')}
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-primary)] text-right"
+                    className="py-2.5 px-2.5 cursor-pointer hover:text-[var(--text-primary)] text-right"
                   >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>{tr('dmColNetProfit')} ({usd(capitalUsd, 0)})</span>
-                      <ArrowUpDown size={11} className="text-[#45c4b0]" />
+                    <div className="flex items-center justify-end gap-1 truncate">
+                      <span className="truncate">{tr('dmColNetProfit')} ({usd(capitalUsd, 0)})</span>
+                      <ArrowUpDown size={11} className="text-[#45c4b0] shrink-0" />
                     </div>
                   </th>
                   <th 
                     onClick={() => toggleSort('liquidity')}
-                    className="py-2.5 px-3 cursor-pointer hover:text-[var(--text-primary)] text-right"
+                    className="py-2.5 px-2.5 cursor-pointer hover:text-[var(--text-primary)] text-right"
                   >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>{tr('dmColLiquidity')} / {locale === 'zh' ? '成交量' : 'Vol'}</span>
-                      <ArrowUpDown size={11} className={sortField === 'liquidity' || sortField === 'volume' ? 'text-[#45c4b0]' : 'text-[var(--text-muted)]'} />
+                    <div className="flex items-center justify-end gap-1 truncate">
+                      <span className="truncate">{tr('dmColLiquidity')} / {locale === 'zh' ? '成交量' : 'Vol'}</span>
+                      <ArrowUpDown size={11} className={sortField === 'liquidity' || sortField === 'volume' ? 'text-[#45c4b0] shrink-0' : 'text-[var(--text-muted)] shrink-0'} />
                     </div>
                   </th>
-                  <th className="py-2.5 px-3 text-center">{tr('dmColAction')}</th>
+                  <th className="py-2.5 px-2 text-center">{tr('dmColAction')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -628,8 +639,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           }`}
                         >
                           {/* 1. 资产与认证 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1 flex-wrap">
                               <span 
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -644,58 +655,58 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                               {row.security && (
                                 row.security.isHoneypot ? (
                                   <span 
-                                    className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse"
+                                    className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 flex items-center gap-0.5 animate-pulse"
                                     title={`🚨 智能合约貔貅高危:\n${row.security.riskReason}`}
                                   >
-                                    <ShieldAlert size={10} className="text-rose-400" />
-                                    <span>{locale === 'zh' ? '高危貔貅' : 'Honeypot'}</span>
+                                    <ShieldAlert size={9} className="text-rose-400" />
+                                    <span>{locale === 'zh' ? '貔貅' : 'Honeypot'}</span>
                                   </span>
                                 ) : row.security.riskLevel === 'warning' ? (
                                   <span 
-                                    className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+                                    className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5"
                                     title={`⚠️ 代码风控提醒:\n${row.security.riskReason}`}
                                   >
-                                    <ShieldAlert size={10} className="text-amber-400" />
-                                    <span>{locale === 'zh' ? '有税/限制' : 'Tax/Risk'}</span>
+                                    <ShieldAlert size={9} className="text-amber-400" />
+                                    <span>{locale === 'zh' ? '有税' : 'Tax'}</span>
                                   </span>
                                 ) : (
                                   <span 
-                                    className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                                    className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5"
                                     title={`✓ 智能合约代码体检通过:\n0%买卖税 · 无貔貅限制`}
                                   >
-                                    <ShieldCheck size={10} className="text-emerald-400" />
-                                    <span>{locale === 'zh' ? '0%税安全' : '0% Tax'}</span>
+                                    <ShieldCheck size={9} className="text-emerald-400" />
+                                    <span>{locale === 'zh' ? '0%税' : '0% Tax'}</span>
                                   </span>
                                 )
                               )}
-                               {(row.poolFeeTrap || row.netCalc.isTrapPool || (row.buyPoolFee && row.buyPoolFee >= 0.05) || (row.sellPoolFee && row.sellPoolFee >= 0.05)) && (
+                              {(row.poolFeeTrap || row.netCalc.isTrapPool || (row.buyPoolFee && row.buyPoolFee >= 0.05) || (row.sellPoolFee && row.sellPoolFee >= 0.05)) && (
                                 <span 
-                                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-600/30 text-rose-200 border border-rose-500/50 flex items-center gap-1 animate-pulse"
+                                  className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-rose-600/30 text-rose-200 border border-rose-500/50 flex items-center gap-0.5 animate-pulse"
                                   title={`🚨 高费率陷阱池 (Trap Pool):\n流动性池收取高达 ${Math.max(row.buyPoolFee || 0, row.sellPoolFee || 0) * 100}% 的交易手续费，实际无法获利！`}
                                 >
-                                  <AlertTriangle size={10} className="text-rose-400" />
-                                  <span>{locale === 'zh' ? `陷阱池 ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%` : `Trap ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%`}</span>
+                                  <AlertTriangle size={9} className="text-rose-400" />
+                                  <span>{locale === 'zh' ? `陷阱 ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%` : `Trap ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%`}</span>
                                 </span>
                               )}
                               {row.netCalc.isNonStandardQuote && (
                                 <span 
-                                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+                                  className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5"
                                   title={`⚠️ 非稳定币结算：卖出变现到手为「${row.netCalc.settlementAsset}」（非USDC/USDT）。若需换回稳定币，需在${row.sellChainName}再进行一次 Swap`}
                                 >
-                                  <Coins size={9} className="text-amber-400" />
+                                  <Coins size={8} className="text-amber-400" />
                                   <span>产出: {row.netCalc.settlementAsset}</span>
                                 </span>
                               )}
                               {row.netCalc.isCrossQuote && (
                                 <span 
-                                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                                  className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30"
                                   title={`🔀 跨配对套利：买端池为 ${row.symbol}/${row.buyQuoteSymbol || 'Quote'}，卖端池为 ${row.symbol}/${row.sellQuoteSymbol || 'Quote'}`}
                                 >
                                   🔀 跨配对
                                 </span>
                               )}
                               {row.decision?.status && (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[#45c4b0]/15 text-[#45c4b0] border border-[#45c4b0]/25">
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-[#45c4b0]/15 text-[#45c4b0] border border-[#45c4b0]/25">
                                   {row.decision.status}
                                 </span>
                               )}
@@ -707,7 +718,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           </td>
 
                           {/* 综合评分 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap text-center">
+                          <td className="py-2.5 px-2 text-center">
                             <div className="inline-flex flex-col items-center">
                               <div className={`px-2 py-0.5 rounded text-xs font-mono font-bold border flex items-center gap-1 ${
                                 row.netCalc.score >= 85 ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm' :
@@ -719,47 +730,47 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 <span>{row.netCalc.scoreGrade}</span>
                                 <span className="font-mono-num">{row.netCalc.score}</span>
                               </div>
-                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5 truncate max-w-[85px]" title={row.netCalc.scoreComment}>
+                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5 truncate max-w-[72px]" title={row.netCalc.scoreComment}>
                                 {row.netCalc.scoreComment}
                               </span>
                             </div>
                           </td>
 
                           {/* 2. 买入腿 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${chainBadgeColor(row.buyChain)}`}>
+                          <td className="py-2.5 px-2.5">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className={`px-1 py-0.2 rounded text-[9px] font-bold uppercase border shrink-0 ${chainBadgeColor(row.buyChain)}`}>
                                 {row.buyChain}
                               </span>
-                              <span className="text-[11px] text-[var(--text-secondary)] font-medium">
+                              <span className="text-[11px] text-[var(--text-secondary)] font-medium truncate" title={`${row.buyDex || 'DEX'}${row.buyQuoteSymbol ? ` · ${row.symbol}/${row.buyQuoteSymbol}` : ''}`}>
                                 {row.buyDex || 'DEX'}{row.buyQuoteSymbol ? ` · ${row.symbol}/${row.buyQuoteSymbol}` : ''}
                               </span>
                               {row.netCalc.buyPoolFeeRate >= 0.05 ? (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse" title={`⚠️ 高费率池：Swap手续费 ${(row.netCalc.buyPoolFeeRate * 100).toFixed(1)}%`}>
-                                  {(row.netCalc.buyPoolFeeRate * 100).toFixed(1)}%池费
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0" title={`⚠️ 高费率池：Swap手续费 ${(row.netCalc.buyPoolFeeRate * 100).toFixed(1)}%`}>
+                                  {(row.netCalc.buyPoolFeeRate * 100).toFixed(0)}%费
                                 </span>
                               ) : row.netCalc.buyPoolFeeRate > 0.01 ? (
-                                <span className="px-1 py-0.2 rounded text-[9px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25" title={`池手续费: ${(row.netCalc.buyPoolFeeRate * 100).toFixed(2)}%`}>
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0" title={`池手续费: ${(row.netCalc.buyPoolFeeRate * 100).toFixed(2)}%`}>
                                   {(row.netCalc.buyPoolFeeRate * 100).toFixed(1)}%
                                 </span>
                               ) : null}
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className="font-mono-num font-bold text-xs text-[var(--text-primary)]">
+                            <div className="flex items-center gap-1 mt-1 flex-wrap min-w-0">
+                              <span className="font-mono-num font-bold text-xs text-[var(--text-primary)] shrink-0">
                                 {usd(currentBuyPrice)}
                               </span>
                               {hasLivePrice && (
-                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" title="实时代币现货单价">
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0" title="实时代币现货单价">
                                   LIVE
                                 </span>
                               )}
                               {row.buyPriceNative !== undefined && row.buyPriceNative !== null && row.buyQuoteSymbol && (
-                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25" title={`买入原生计价: 1 ${row.symbol} = ${row.buyPriceNative.toFixed(4)} ${row.buyQuoteSymbol}`}>
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0" title={`买入原生计价: 1 ${row.symbol} = ${row.buyPriceNative.toFixed(4)} ${row.buyQuoteSymbol}`}>
                                   1={row.buyPriceNative.toFixed(2)}{row.buyQuoteSymbol}
                                 </span>
                               )}
                               {row.buyAddress && (
-                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] ml-auto">
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] ml-auto shrink-0">
                                   <button
                                     onClick={(e) => handleCopy(e, row.buyAddress, `${row.uniqueKey}-buy`)}
                                     className="hover:text-[var(--text-primary)] cursor-pointer"
@@ -784,19 +795,19 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           </td>
 
                           {/* 3. 跨链路由通道 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${row.netCalc.route.badgeClass}`}>
+                          <td className="py-2.5 px-2.5">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${row.netCalc.route.badgeClass}`}>
                                 {row.netCalc.route.bridgeName}
                               </span>
-                              <span className="text-[11px] text-[var(--text-secondary)] font-mono">
+                              <span className="text-[11px] text-[var(--text-secondary)] font-mono shrink-0">
                                 ~{row.netCalc.route.etaMinutes}m
                               </span>
                               {row.netCalc.isLiveQuote && (
-                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" title="链上实时询价已打通" />
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="链上实时询价已打通" />
                               )}
                             </div>
-                            <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-1 flex items-center gap-1">
+                            <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-1 flex items-center gap-1 truncate">
                               <span>{locale === 'zh' ? (row.netCalc.isLiveQuote ? '实时费' : '预估费') : (row.netCalc.isLiveQuote ? 'Live Fee' : 'Est. Fee')}:</span>
                               <span className={row.netCalc.isLiveQuote ? 'text-emerald-400 font-bold' : ''}>
                                 ~{usd(row.netCalc.estGasUsd + row.netCalc.estBridgeFeeUsd)}
@@ -805,40 +816,40 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           </td>
 
                           {/* 4. 卖出腿 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${chainBadgeColor(row.sellChain)}`}>
+                          <td className="py-2.5 px-2.5">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className={`px-1 py-0.2 rounded text-[9px] font-bold uppercase border shrink-0 ${chainBadgeColor(row.sellChain)}`}>
                                 {row.sellChain}
                               </span>
-                              <span className="text-[11px] text-[var(--text-secondary)] font-medium">
+                              <span className="text-[11px] text-[var(--text-secondary)] font-medium truncate" title={`${row.sellDex || 'DEX'}${row.sellQuoteSymbol ? ` · ${row.symbol}/${row.sellQuoteSymbol}` : ''}`}>
                                 {row.sellDex || 'DEX'}{row.sellQuoteSymbol ? ` · ${row.symbol}/${row.sellQuoteSymbol}` : ''}
                               </span>
                               {row.netCalc.sellPoolFeeRate >= 0.05 ? (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse" title={`⚠️ 高费率池：Swap手续费 ${(row.netCalc.sellPoolFeeRate * 100).toFixed(1)}%`}>
-                                  {(row.netCalc.sellPoolFeeRate * 100).toFixed(1)}%池费
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0" title={`⚠️ 高费率池：Swap手续费 ${(row.netCalc.sellPoolFeeRate * 100).toFixed(1)}%`}>
+                                  {(row.netCalc.sellPoolFeeRate * 100).toFixed(0)}%池费
                                 </span>
                               ) : row.netCalc.sellPoolFeeRate > 0.01 ? (
-                                <span className="px-1 py-0.2 rounded text-[9px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25" title={`池手续费: ${(row.netCalc.sellPoolFeeRate * 100).toFixed(2)}%`}>
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0" title={`池手续费: ${(row.netCalc.sellPoolFeeRate * 100).toFixed(2)}%`}>
                                   {(row.netCalc.sellPoolFeeRate * 100).toFixed(1)}%
                                 </span>
                               ) : null}
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className="font-mono-num font-bold text-xs text-[var(--text-primary)]">
+                            <div className="flex items-center gap-1 mt-1 flex-wrap min-w-0">
+                              <span className="font-mono-num font-bold text-xs text-[var(--text-primary)] shrink-0">
                                 {usd(currentSellPrice)}
                               </span>
                               {hasLivePrice && (
-                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" title="实时代币现货单价">
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0" title="实时代币现货单价">
                                   LIVE
                                 </span>
                               )}
                               {row.sellPriceNative !== undefined && row.sellPriceNative !== null && row.sellQuoteSymbol && (
-                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25" title={`卖出原生计价: 1 ${row.symbol} = ${row.sellPriceNative.toFixed(4)} ${row.sellQuoteSymbol}`}>
+                                <span className="px-1 py-0.2 rounded text-[8px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0" title={`卖出原生计价: 1 ${row.symbol} = ${row.sellPriceNative.toFixed(4)} ${row.sellQuoteSymbol}`}>
                                   1={row.sellPriceNative.toFixed(2)}{row.sellQuoteSymbol}
                                 </span>
                               )}
                               {row.sellAddress && (
-                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] ml-auto">
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] ml-auto shrink-0">
                                   <button
                                     onClick={(e) => handleCopy(e, row.sellAddress, `${row.uniqueKey}-sell`)}
                                     className="hover:text-[var(--text-primary)] cursor-pointer"
@@ -863,34 +874,34 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           </td>
 
                           {/* 5. 名义价差 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap font-mono-num">
-                            <div className={`font-bold text-xs ${currentSpreadPct <= 0 ? 'text-rose-400 animate-pulse' : 'text-[#f5c042]'}`}>
+                          <td className="py-2.5 px-2 font-mono-num">
+                            <div className={`font-bold text-xs truncate ${currentSpreadPct <= 0 ? 'text-rose-400 animate-pulse' : 'text-[#f5c042]'}`}>
                               {currentSpreadPct <= 0 ? `🚨 倒挂 ${currentSpreadPct.toFixed(2)}%` : `+${currentSpreadPct.toFixed(2)}%`}
                             </div>
                             {row.netCalc.isNonStandardQuote && row.netCalc.quoteTokenSpreadPct !== null ? (
-                              <div className="text-[10px] text-amber-300 font-bold mt-0.5" title={`基于实际结算币(${row.netCalc.settlementAsset})计算的真实利差（消除跨链计价币本身的合成汇率偏差）`}>
+                              <div className="text-[9px] text-amber-300 font-bold mt-0.5 truncate" title={`基于实际结算币(${row.netCalc.settlementAsset})计算的真实利差（消除跨链计价币本身的合成汇率偏差）`}>
                                 真实: +{row.netCalc.quoteTokenSpreadPct.toFixed(2)}% {row.netCalc.settlementAsset}
                               </div>
                             ) : (
-                              <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                              <div className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">
                                 Δ {row.netCalc.priceDelta >= 0 ? '+' : ''}{usd(row.netCalc.priceDelta)}
                               </div>
                             )}
                           </td>
 
                           {/* 6. 预估净利 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap text-right font-mono-num">
+                          <td className="py-2.5 px-2.5 text-right font-mono-num">
                             {row.netCalc.isNonStandardQuote ? (
-                              <div>
-                                <div className="font-bold text-xs text-amber-300 font-mono">
-                                  +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset}本位
+                              <div className="space-y-0.5">
+                                <div className="font-bold text-xs text-amber-300 font-mono truncate">
+                                  +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset}
                                 </div>
                                 {row.netCalc.isProfitableFullCycle ? (
-                                  <div className="text-[10px] text-[#45c4b0] font-semibold mt-0.5" title={`投入 $${capitalUsd} USDC 全闭环 (含2次额外Swap及主网Gas) 净得: +${usd(row.netCalc.netProfitUsdFullCycle)}`}>
+                                  <div className="text-[9px] text-[#45c4b0] font-semibold truncate" title={`投入 $${capitalUsd} USDC 全闭环 (含2次额外Swap及主网Gas) 净得: +${usd(row.netCalc.netProfitUsdFullCycle)}`}>
                                     USD全闭环: +{usd(row.netCalc.netProfitUsdFullCycle)}
                                   </div>
                                 ) : (
-                                  <div className="text-[10px] text-rose-400 font-semibold mt-0.5" title={`投入 $${capitalUsd} USDC 全闭环: 额外兑换与主网Gas磨损 -$${row.netCalc.extraFrictionUsd}，导致净亏损 ${usd(row.netCalc.netProfitUsdFullCycle)}`}>
+                                  <div className="text-[9px] text-rose-400 font-semibold truncate" title={`投入 $${capitalUsd} USDC 全闭环: 额外兑换与主网Gas磨损 -$${row.netCalc.extraFrictionUsd}，导致净亏损 ${usd(row.netCalc.netProfitUsdFullCycle)}`}>
                                     USD全闭环: {usd(row.netCalc.netProfitUsdFullCycle)} 倒挂
                                   </div>
                                 )}
@@ -917,9 +928,9 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                           </td>
 
                           {/* 7. 池流动性与成交量 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap text-right font-mono-num">
+                          <td className="py-2.5 px-2.5 text-right font-mono-num">
                             <div 
-                              className="font-semibold text-xs text-[var(--text-primary)] cursor-help" 
+                              className="font-semibold text-xs text-[var(--text-primary)] cursor-help truncate" 
                               title={`短板深度: ${usd(row.minLiquidityUsd)} | 买入池: ${usd(row.buyLiquidityUsd || row.minLiquidityUsd)} | 卖出池: ${usd(row.sellLiquidityUsd || row.minLiquidityUsd)} | 建议单笔上限: ${usd(row.netCalc.maxSafeCapacityUsd)}`}
                             >
                               {usdCompact(row.minLiquidityUsd)}
@@ -927,7 +938,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 ({locale === 'zh' ? '深度' : 'Depth'})
                               </span>
                             </div>
-                            <div className="text-[10px] mt-0.5">
+                            <div className="text-[10px] mt-0.5 truncate">
                               {row.netCalc.liquidityHealth === 'safe' && (
                                 <span className="text-[#45c4b0] font-sans">
                                   {locale === 'zh' ? '深度充裕' : 'Deep'} (~{row.netCalc.poolImpactPct.toFixed(1)}%)
@@ -948,53 +959,53 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                             <div className="mt-1 flex items-center justify-end gap-1 font-mono-num flex-wrap">
                               {row.sellQuoteReserveUsd !== undefined && row.sellQuoteReserveUsd < 500 ? (
                                 <span 
-                                  className="px-1.5 py-0.2 rounded bg-rose-500/25 text-rose-300 border border-rose-500/50 text-[9px] font-bold font-sans animate-pulse"
+                                  className="px-1 py-0.2 rounded bg-rose-500/25 text-rose-300 border border-rose-500/50 text-[8px] font-bold font-sans"
                                   title={`致命单边池：卖出池 ${row.sellQuoteSymbol || '现金'} 储备仅 $${row.sellQuoteReserveUsd.toFixed(2)} (仅占池 ${( (row.sellQuoteRatio || 0) * 100).toFixed(1)}%)！TVL 是单边代币虚标，实际无法承兑变现`}
                                 >
-                                  ⚠️ 现金枯竭 ({row.sellQuoteSymbol || 'Quote'} ${row.sellQuoteReserveUsd.toFixed(0)})
+                                  ⚠️ 现金枯竭
                                 </span>
                               ) : row.minVolume6h === 0 ? (
                                 <span 
-                                  className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40 text-[9px] font-bold font-sans animate-pulse"
+                                  className="px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40 text-[8px] font-bold font-sans"
                                   title={`近6小时短板池成交为$0 (买端6h: ${usd(row.buyVolume6h || 0)}, 卖端6h: ${usd(row.sellVolume6h || 0)})！极高概率为无对手盘的死池或虚假陈旧挂单`}
                                 >
-                                  ⚠️ 6h零成交(死池)
+                                  ⚠️ 6h零成交
                                 </span>
                               ) : (row.minVolume24h !== undefined && row.minVolume24h < 500) ? (
                                 <span 
-                                  className="px-1 py-0.2 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px] font-sans"
+                                  className="px-1 py-0.2 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[8px] font-sans"
                                   title={`24小时成交量仅 ${usd(row.minVolume24h || 0)}，换手严重不足`}
                                 >
-                                  ⚠️ 24h极低量
+                                  ⚠️ 24h低量
                                 </span>
                               ) : row.minVolume24h !== undefined ? (
                                 <span 
-                                  className={`text-[9px] ${row.minVolume24h >= 50000 ? 'text-emerald-400 font-semibold' : 'text-[var(--text-muted)]'}`}
+                                  className={`text-[8px] ${row.minVolume24h >= 50000 ? 'text-emerald-400 font-semibold' : 'text-[var(--text-muted)]'}`}
                                   title={`24h短板量: ${usd(row.minVolume24h)} | 6h短板量: ${usd(row.minVolume6h || 0)}`}
                                 >
-                                  24h量: {usdCompact(row.minVolume24h)}
+                                  24h: {usdCompact(row.minVolume24h)}
                                 </span>
                               ) : null}
                             </div>
                           </td>
 
                           {/* 8. 操作与展开 */}
-                          <td className="py-2.5 px-3 whitespace-nowrap text-center">
-                            <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <td className="py-2.5 px-2 text-center">
+                            <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => onSelectOpp(row)}
-                                className="px-2 py-1 rounded bg-[#f5c042]/15 hover:bg-[#f5c042]/25 text-[#f5c042] border border-[#f5c042]/30 text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
+                                className="px-1.5 py-1 rounded bg-[#f5c042]/15 hover:bg-[#f5c042]/25 text-[#f5c042] border border-[#f5c042]/30 text-[10px] font-semibold transition cursor-pointer flex items-center gap-0.5 shrink-0"
                                 title={locale === 'zh' ? '查看标的实时行情与操盘' : 'Open Trade Console'}
                               >
-                                <FileEdit size={11} />
+                                <FileEdit size={10} />
                                 <span>{tr('dmTrack')}</span>
                               </button>
                               <button
                                 onClick={() => setExpandedKey(isExpanded ? null : row.uniqueKey)}
-                                className="p-1 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition cursor-pointer"
+                                className="p-1 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] transition cursor-pointer shrink-0"
                                 title={isExpanded ? tr('dmCollapse') : tr('dmExpand')}
                               >
-                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                               </button>
                             </div>
                           </td>
@@ -1040,7 +1051,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                 )}
 
                                 {/* 链上实时询价打通状态横幅 */}
-                                <div className="px-3.5 py-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 min-w-0">
+                                <div className="px-3.5 py-2.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-2.5 min-w-0">
                                   <div className="flex items-center gap-2 min-w-0 flex-1">
                                     {isQuoting ? (
                                       <div className="flex items-center gap-2 text-sky-400 text-xs font-mono min-w-0 flex-wrap">
@@ -1139,9 +1150,9 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                     )}
                                   </div>
 
-                                  <div className="flex items-center gap-2 shrink-0">
+                                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
                                     {liveData?.details?.gasTokens && liveData.details.gasTokens.length > 0 && (
-                                      <span className="text-[10px] font-mono text-[var(--text-secondary)] hidden lg:inline">
+                                      <span className="text-[10px] font-mono text-[var(--text-secondary)] hidden xl:inline">
                                         Gas 构成: {liveData.details.gasTokens.join(' · ')}
                                       </span>
                                     )}
@@ -1261,7 +1272,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                       <div className="text-[10px] font-sans font-bold text-[var(--text-primary)]">
                                         {locale === 'zh' ? '双重操盘视角收益测算:' : 'Dual Perspective Calculations:'}
                                       </div>
-                                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded min-w-0">
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded min-w-0">
                                         <span className="text-[var(--text-secondary)] font-sans break-words">
                                           视角 A · {row.netCalc.settlementAsset} 本位持有者 (直接赚取代币):
                                         </span>
@@ -1269,13 +1280,13 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                           +{row.netCalc.quoteTokenSpreadPct !== null ? row.netCalc.quoteTokenSpreadPct.toFixed(2) : row.netCalc.netRoiPct.toFixed(2)}% {row.netCalc.settlementAsset} (无需额外兑换)
                                         </span>
                                       </div>
-                                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded min-w-0">
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] bg-[var(--bg-base)]/60 p-1.5 rounded min-w-0">
                                         <span className="text-[var(--text-secondary)] font-sans break-words">
                                           视角 B · USD 稳定币全闭环 (USDC ➔ {row.buyQuoteSymbol} ➔ {row.symbol} ➔ 桥 ➔ {row.symbol} ➔ {row.sellQuoteSymbol} ➔ USDC):
                                         </span>
-                                        <span className={`font-bold shrink-0 ${row.netCalc.isProfitableFullCycle ? 'text-[#45c4b0]' : 'text-rose-400'}`}>
-                                          {row.netCalc.isProfitableFullCycle ? '+' : ''}{usd(row.netCalc.netProfitUsdFullCycle)} ({row.netCalc.netRoiPctFullCycle.toFixed(2)}% ROI)
-                                          <span className="text-[9px] text-[var(--text-muted)] font-normal ml-1">
+                                        <span className={`font-bold shrink-0 flex items-center flex-wrap gap-1 ${row.netCalc.isProfitableFullCycle ? 'text-[#45c4b0]' : 'text-rose-400'}`}>
+                                          <span>{row.netCalc.isProfitableFullCycle ? '+' : ''}{usd(row.netCalc.netProfitUsdFullCycle)} ({row.netCalc.netRoiPctFullCycle.toFixed(2)}% ROI)</span>
+                                          <span className="text-[9px] text-[var(--text-muted)] font-normal">
                                             (额外 2x Swap 及主网 Gas 磨损 -{usd(row.netCalc.extraFrictionUsd)})
                                           </span>
                                         </span>
