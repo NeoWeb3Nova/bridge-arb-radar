@@ -55,6 +55,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
       setSearchQuery(filterSymbol);
       setChainFilter('all');
       setVerdictFilter('all');
+      setQuoteFilter('all');
       const match = opportunities.find(
         (o) => o.symbol.toLowerCase() === filterSymbol.toLowerCase()
       );
@@ -273,11 +274,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         }
         return sortOrder === 'desc' ? -diff : diff;
       });
-  }, [opportunities, searchQuery, chainFilter, verdictFilter, capitalUsd, sortField, sortOrder, liveQuotes]);
+  }, [opportunities, searchQuery, chainFilter, verdictFilter, quoteFilter, capitalUsd, sortField, sortOrder, liveQuotes]);
 
   // 折叠计算：默认仅渲染 TOP 8 精选标的；搜索/过滤时自动全展开
   const visibleData = useMemo(() => {
-    if (!isFolded || searchQuery.trim() || chainFilter !== 'all' || verdictFilter !== 'all') {
+    if (!isFolded || searchQuery.trim() || chainFilter !== 'all' || verdictFilter !== 'all' || quoteFilter !== 'all') {
       return processedData;
     }
     if (expandedKey) {
@@ -287,7 +288,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
       }
     }
     return processedData.slice(0, DEFAULT_FOLD_COUNT);
-  }, [processedData, isFolded, searchQuery, chainFilter, verdictFilter, expandedKey]);
+  }, [processedData, isFolded, searchQuery, chainFilter, verdictFilter, quoteFilter, expandedKey]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -339,7 +340,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
             <span className="text-[11px] text-[var(--text-muted)] font-mono">
               ({processedData.length} {locale === 'zh' ? '条套利路径' : 'routes'}{isModuleCollapsed ? (locale === 'zh' ? ' · 已收起' : ' · Collapsed') : ''})
             </span>
-            {!isModuleCollapsed && processedData.length > DEFAULT_FOLD_COUNT && !searchQuery.trim() && chainFilter === 'all' && verdictFilter === 'all' && (
+            {!isModuleCollapsed && processedData.length > DEFAULT_FOLD_COUNT && !searchQuery.trim() && chainFilter === 'all' && verdictFilter === 'all' && quoteFilter === 'all' && (
               <button
                 type="button"
                 onClick={() => setIsFolded(!isFolded)}
