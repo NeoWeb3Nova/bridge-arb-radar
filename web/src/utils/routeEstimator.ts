@@ -72,9 +72,24 @@ export const STANDARD_QUOTE_TOKENS = new Set([
   'WETH', 'ETH', 'SOL', 'WSOL', 'BNB', 'WBNB', 'AVAX', 'WAVAX', 'MATIC', 'POL', 'FTM', 'SUI', 'APT', 'TON'
 ]);
 
+export const MAJOR_STABLECOINS = new Set([
+  'USDT', 'USDC', 'USD', 'DAI', 'USDE', 'FDUSD', 'PYUSD', 'USDB', 'FRAX', 'LUSD', 'BUSD',
+  'TUSD', 'USDD', 'GUSD', 'CRVUSD', 'USDCE', 'USDC.E', 'USDT.E'
+]);
+
 export function isStandardQuote(symbol?: string | null): boolean {
   if (!symbol) return true;
   return STANDARD_QUOTE_TOKENS.has(symbol.toUpperCase().trim());
+}
+
+export function isStablecoin(symbol?: string | null): boolean {
+  if (!symbol) return false;
+  return MAJOR_STABLECOINS.has(symbol.toUpperCase().trim());
+}
+
+export function isStablecoinClosedLoop(buyQuote?: string | null, sellQuote?: string | null): boolean {
+  if (!buyQuote || !sellQuote) return false;
+  return isStablecoin(buyQuote) && isStablecoin(sellQuote);
 }
 
 export interface ArbNetCalculation {
@@ -118,6 +133,7 @@ export interface ArbNetCalculation {
   settlementAsset: string;
   isNonStandardQuote: boolean;
   isCrossQuote: boolean;
+  isStablecoinClosedLoop: boolean;
   buyPriceNative?: number;
   sellPriceNative?: number;
   quoteTokenSpreadPct: number | null;
@@ -543,6 +559,7 @@ export function calculateNetArb(
     settlementAsset,
     isNonStandardQuote,
     isCrossQuote,
+    isStablecoinClosedLoop: isStablecoin(bQuote) && isStablecoin(sQuote),
     buyPriceNative: buyPriceNative ?? undefined,
     sellPriceNative: sellPriceNative ?? undefined,
     quoteTokenSpreadPct,

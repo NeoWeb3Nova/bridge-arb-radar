@@ -483,6 +483,23 @@ async function runTests() {
     ok('BIO 为非标准配对币 (必须提示产出资产与全闭环摩擦)', isStandard('BIO') === false);
     ok('PEPE 为非标准配对币', isStandard('PEPE') === false);
 
+    // 验证主流稳定币闭环判定
+    const MAJOR_STABLECOINS = new Set([
+      'USDT', 'USDC', 'USD', 'DAI', 'USDE', 'FDUSD', 'PYUSD', 'USDB', 'FRAX', 'LUSD', 'BUSD',
+      'TUSD', 'USDD', 'GUSD', 'CRVUSD', 'USDCE', 'USDC.E', 'USDT.E'
+    ]);
+    const isStable = (s) => !s ? false : MAJOR_STABLECOINS.has(s.toUpperCase().trim());
+    const isStableLoop = (b, s) => Boolean(b && s && isStable(b) && isStable(s));
+
+    ok('USDT 与 USDC 均为稳定币', isStable('USDT') === true && isStable('USDC') === true);
+    ok('WBNB 与 ETH 均不是稳定币', isStable('WBNB') === false && isStable('ETH') === false);
+    ok('BIO 不是稳定币', isStable('BIO') === false);
+    ok('RIVER (USDT ➔ USDC) 正确识别为纯稳定币闭环', isStableLoop('USDT', 'USDC') === true);
+    ok('PUFFER (WBNB ➔ ETH) 正确排除在稳定币闭环之外', isStableLoop('WBNB', 'ETH') === false);
+    ok('GIV (USDC ➔ OP) 正确排除在稳定币闭环之外', isStableLoop('USDC', 'OP') === false);
+    ok('VITA (BIO ➔ BIO) 正确排除在稳定币闭环之外', isStableLoop('BIO', 'BIO') === false);
+    ok('XAN (WBTC ➔ USDT) 正确排除在稳定币闭环之外', isStableLoop('WBTC', 'USDT') === false);
+
     // 验证全闭环摩擦计算对净利润的影响
     const capitalUsd = 1000;
     const grossRevenue = (capitalUsd / baseQuote.priceUsd) * ethQuote.priceUsd;

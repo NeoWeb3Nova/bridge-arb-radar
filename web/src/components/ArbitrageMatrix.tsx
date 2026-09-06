@@ -23,7 +23,7 @@ interface Props {
 type SortField = 'score' | 'netProfit' | 'spread' | 'liquidity' | 'volume' | 'time';
 type SortOrder = 'desc' | 'asc';
 type VerdictFilter = 'all' | 'verified' | 'clean';
-type QuoteFilter = 'all' | 'standard' | 'non_standard';
+type QuoteFilter = 'all' | 'stable' | 'standard' | 'non_standard';
 
 export const ArbitrageMatrix: React.FC<Props> = ({ 
   opportunities, 
@@ -245,7 +245,9 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         };
       })
       .filter((item) => {
-        if (quoteFilter === 'standard') {
+        if (quoteFilter === 'stable') {
+          if (!item.netCalc.isStablecoinClosedLoop) return false;
+        } else if (quoteFilter === 'standard') {
           if (item.netCalc.isNonStandardQuote) return false;
         } else if (quoteFilter === 'non_standard') {
           if (!item.netCalc.isNonStandardQuote) return false;
@@ -478,8 +480,9 @@ export const ArbitrageMatrix: React.FC<Props> = ({
               title="按计价代币类型筛选套利机会"
             >
               <option value="all">{locale === 'zh' ? '全部计价币' : 'All Quote Tokens'}</option>
-              <option value="standard">{locale === 'zh' ? '仅主流配对 (USDT/USDC/ETH)' : 'Standard Only (USDT/USDC/ETH)'}</option>
-              <option value="non_standard">{locale === 'zh' ? '仅小币/非标配对' : 'Non-Standard Quotes Only'}</option>
+              <option value="stable">{locale === 'zh' ? '💵 主流稳定币闭环 (USDT/USDC/DAI)' : '💵 Stablecoin Loop Only (USDT/USDC)'}</option>
+              <option value="standard">{locale === 'zh' ? '主流原生与稳定币 (含ETH/BNB/SOL)' : 'Standard Only (incl. ETH/BNB)'}</option>
+              <option value="non_standard">{locale === 'zh' ? '仅小币/非标配对 (如BIO/PEPE)' : 'Non-Standard Quotes Only'}</option>
             </select>
           </div>
 
@@ -688,6 +691,14 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   <span>{locale === 'zh' ? `陷阱 ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%` : `Trap ${Math.max((row.buyPoolFee || 0), (row.sellPoolFee || 0)) * 100}%`}</span>
                                 </span>
                               )}
+                              {row.netCalc.isStablecoinClosedLoop && (
+                                <span 
+                                  className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5"
+                                  title={locale === 'zh' ? `💵 稳定币闭环：买入(${row.netCalc.buyQuoteSymbol})与卖出(${row.netCalc.sellQuoteSymbol})双端均以主流稳定币结算，100% USD 资金闭环` : '💵 Stablecoin Loop: Both legs settle in major USD stablecoins'}
+                                >
+                                  <span>{locale === 'zh' ? '💵 稳定币闭环' : '💵 Stable Loop'}</span>
+                                </span>
+                              )}
                               {row.netCalc.isNonStandardQuote && (
                                 <span 
                                   className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5"
@@ -699,10 +710,14 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                               )}
                               {row.netCalc.isCrossQuote && (
                                 <span 
-                                  className="px-1 py-0.2 rounded text-[8px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                                  className={`px-1 py-0.2 rounded text-[8px] font-mono font-bold ${
+                                    row.netCalc.isStablecoinClosedLoop
+                                      ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
+                                      : 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                  }`}
                                   title={`🔀 跨配对套利：买端池为 ${row.symbol}/${row.buyQuoteSymbol || 'Quote'}，卖端池为 ${row.symbol}/${row.sellQuoteSymbol || 'Quote'}`}
                                 >
-                                  🔀 跨配对
+                                  {row.netCalc.isStablecoinClosedLoop ? '🔀 跨稳定币' : '🔀 跨配对'}
                                 </span>
                               )}
                               {row.decision?.status && (
@@ -1235,6 +1250,23 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                   </div>
                                 </div>
 
+                                {/* 主流稳定币闭环提示卡片 */}
+                                {row.netCalc.isStablecoinClosedLoop && (
+                                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between flex-wrap gap-2 text-xs min-w-0">
+                                    <div className="flex items-center gap-2 text-emerald-400 font-semibold min-w-0">
+                                      <span className="text-base shrink-0">💵</span>
+                                      <span className="break-words">
+                                        {locale === 'zh'
+                                          ? `主流稳定币闭环 (${row.netCalc.buyQuoteSymbol} ➔ ${row.netCalc.sellQuoteSymbol})：买入与卖出两端均为主流美元稳定币，直接完成资金闭环，无计价资产汇率波动风险。`
+                                          : `Major Stablecoin Closed Loop (${row.netCalc.buyQuoteSymbol} ➔ ${row.sellQuoteSymbol}): Both legs settle in USD stablecoins with zero volatile asset exposure.`}
+                                      </span>
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold shrink-0">
+                                      100% USD 闭环
+                                    </span>
+                                  </div>
+                                )}
+
                                 {/* 非标准计价代币资产结算与全闭环分析卡片 */}
                                 {row.netCalc.isNonStandardQuote && (
                                   <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-amber-500/30 space-y-2 min-w-0">
@@ -1349,6 +1381,11 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                           <span className="font-semibold text-[var(--text-primary)] break-words">{row.sellChainName} · {row.sellDex}{row.sellQuoteSymbol ? ` (${row.symbol}/${row.sellQuoteSymbol})` : ''}</span>
                                           <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 break-words">
                                             卖出全部代币 ➔ 变现回款 <span className="text-[#45c4b0] font-bold">{usd(row.netCalc.grossRevenueUsd)} USD</span> (单价 {usd(row.sellPrice)})
+                                            {row.netCalc.isStablecoinClosedLoop && (
+                                              <div className="text-[9px] text-emerald-400 font-mono mt-0.5 break-words">
+                                                ✓ 纯稳定币闭环: 最终变现到账为稳定币 {row.netCalc.sellQuoteSymbol} (直接保值闭环，无汇率波动风险)
+                                              </div>
+                                            )}
                                             {row.netCalc.isNonStandardQuote && (
                                               <div className="text-[9px] text-amber-300 font-mono mt-0.5 break-words">
                                                 ⚠️ 到账结算资产为 ~{((row.netCalc.grossRevenueUsd / (row.sellQuotePriceUsd || 1))).toLocaleString(undefined, { maximumFractionDigits: 1 })} {row.sellQuoteSymbol} (非稳定币)

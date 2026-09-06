@@ -4,7 +4,7 @@ import { usd, usdCompact, agoSec } from '../utils/format';
 import { VerdictBadge } from './VerdictBadge';
 import { ArrowRight, ExternalLink, Activity, Copy, Check, FileEdit, ShieldCheck, ShieldAlert, Coins } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
-import { isStandardQuote } from '../utils/routeEstimator';
+import { isStandardQuote, isStablecoinClosedLoop } from '../utils/routeEstimator';
 
 interface Props {
   opp: OpportunityItem;
@@ -47,6 +47,14 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect }) => {
                 {opp.symbol}
               </span>
               <VerdictBadge verdict={opp.verdict} size="xs" />
+              {isStablecoinClosedLoop(opp.buyQuoteSymbol, opp.sellQuoteSymbol) && (
+                <span 
+                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                  title={locale === 'zh' ? '💵 主流稳定币闭环（买卖双端均以 USDT/USDC/DAI 结算）' : '💵 Stablecoin Loop'}
+                >
+                  <span>{locale === 'zh' ? '💵 稳定币闭环' : '💵 Stable Loop'}</span>
+                </span>
+              )}
               {opp.sellQuoteSymbol && !isStandardQuote(opp.sellQuoteSymbol) && (
                 <span 
                   className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1"
