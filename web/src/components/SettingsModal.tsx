@@ -131,7 +131,7 @@ const PRESET_STABLECOINS: StablecoinMeta[] = [
 ];
 
 export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess }) => {
-  const { locale, t: tr } = useI18n();
+  const { t: tr } = useI18n();
   const [activeTab, setActiveTab] = useState<'notifications' | 'scan' | 'proxy' | 'stablecoins' | 'storage'>('notifications');
 
   // Proxy & Keys
@@ -531,7 +531,7 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
                 <Bell size={15} className={activeTab === 'notifications' ? 'text-[#f5c042]' : 'text-[var(--text-muted)]'} />
                 <span>{tr('setNotifTitle')}</span>
               </div>
-              {notifEnabled && (
+              {(webEnabled || tgEnabled) && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20" title="推送已启用" />
               )}
             </button>
