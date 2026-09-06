@@ -1419,6 +1419,14 @@ export const ArbitrageMatrix: React.FC<Props> = ({
                                                 LIVE
                                               </span>
                                             )}
+                                            {row.netCalc.route.bridgeName.includes('+') && (
+                                              <span 
+                                                className="px-1.5 py-0.2 rounded text-[9px] font-sans bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)] shrink-0 cursor-help" 
+                                                title="协议组合通道：底层清算协议 (Circle CCTP 销毁铸造) + 自动化中继器 (Celer Relayer)。您只需在源链发起 1 次跨链交易，中继器将全自动完成目标链入账，无需手动二次操作。"
+                                              >
+                                                单笔跨链 · 自动中继
+                                              </span>
+                                            )}
                                           </div>
                                           <div className="text-[10px] text-[var(--text-muted)] font-mono-num mt-0.5 break-words">
                                             转移 <span className="text-[var(--text-primary)] font-bold">{row.netCalc.tokensBought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> {row.symbol} ➔ ~{row.netCalc.route.etaMinutes}m · 损耗 ~{usd(row.netCalc.estGasUsd + row.netCalc.estBridgeFeeUsd)}
