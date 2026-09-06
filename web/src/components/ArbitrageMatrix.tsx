@@ -360,41 +360,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
             )}
           </div>
 
-          {/* 右侧：模拟头寸 Position Sizer & 视图切换 */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="flex items-center gap-1.5 text-xs bg-[var(--bg-base)] px-2.5 py-1 rounded-md border border-[var(--border-subtle)]">
-              <DollarSign size={13} className="text-[#f5c042]" />
-              <span className="text-[var(--text-secondary)] font-medium text-[11px]">{locale === 'zh' ? '模拟本金 (USD):' : 'Capital (USD):'}</span>
-              {[500, 1000, 2500, 5000].map((c) => (
-                <button
-                  key={c}
-                  onClick={() => applyCapital(c)}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
-                    capitalUsd === c
-                      ? 'bg-[#f5c042] text-black shadow-xs'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
-                  }`}
-                >
-                  ${c}
-                </button>
-              ))}
-              <div className="flex items-center ml-1">
-                <span className="text-[10px] text-[var(--text-muted)] mr-0.5">$</span>
-                <input
-                  type="number"
-                  value={customCapital}
-                  onChange={(e) => {
-                    setCustomCapital(e.target.value);
-                    const n = parseFloat(e.target.value);
-                    if (n > 0) setCapitalUsd(n);
-                  }}
-                  className="w-14 bg-transparent border-b border-[var(--border-subtle)] text-[10px] font-mono-num font-bold text-[var(--text-primary)] focus:outline-none focus:border-[#f5c042]"
-                  placeholder="自定义"
-                />
-              </div>
-            </div>
-
-            {/* 视图切换 */}
+          {/* 右侧：视图切换 */}
+          <div className="flex items-center gap-2.5">
             <div className="flex items-center rounded-md border border-[var(--border-subtle)] bg-[var(--bg-base)] p-0.5">
               <button
                 onClick={() => setViewMode('table')}
