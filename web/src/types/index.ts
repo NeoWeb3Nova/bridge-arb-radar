@@ -217,6 +217,8 @@ export interface WalletItem {
   score: number;
   scoreBreakdown?: WalletScoreBreakdown;
   bridgeCount: number;
+  sentCount?: number;
+  receivedCount?: number;
   capitalCycles: number;
   roundtrips: number;
   tokenCount: number;
@@ -225,6 +227,7 @@ export interface WalletItem {
   lastSeen: string | null;
   firstSeen: string | null;
   likelyContract: boolean;
+  passiveAccount?: boolean;
   autoTags: string[];
   tags: string[];
   notes: string;

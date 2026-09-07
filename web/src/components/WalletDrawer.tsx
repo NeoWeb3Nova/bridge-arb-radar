@@ -116,7 +116,14 @@ export const WalletDrawer: React.FC<Props> = ({ wallet, onClose }) => {
         <div className="bg-[var(--bg-elevated)]/50 p-3.5 rounded-lg border border-[var(--border-subtle)] space-y-2 text-xs">
           <div className="flex justify-between">
             <span className="text-[var(--text-secondary)]">{tr('dwBridgeTimes')}</span>
-            <span className="font-mono-num text-[var(--text-primary)]">{wallet.bridgeCount} {tr('dwTimesUnit')}</span>
+            <span className="font-mono-num text-[var(--text-primary)]">
+              {wallet.bridgeCount} {tr('dwTimesUnit')}
+              {(wallet.sentCount !== undefined || wallet.receivedCount !== undefined) && (
+                <span className="text-[10px] text-[var(--text-muted)] ml-1 font-normal">
+                  (发 {wallet.sentCount || 0} / 收 {wallet.receivedCount || 0})
+                </span>
+              )}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-[var(--text-secondary)]">{tr('dwMaxUsd')}</span>

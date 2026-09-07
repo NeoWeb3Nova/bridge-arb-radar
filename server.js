@@ -158,7 +158,7 @@ function maybeMigrate() {
   const d = store.raw();
   const wallets = Object.values(d.wallets);
   if (!wallets.length) return;
-  const needs = wallets.some((w) => !Array.isArray(w.flows) || w.capitalCycles === undefined);
+  const needs = wallets.some((w) => !Array.isArray(w.flows) || w.capitalCycles === undefined || w.sentCount === undefined);
   if (!needs) return;
   console.log('[migrate] 检测到旧格式钱包数据，正从已入库流水重建统计…');
   try {

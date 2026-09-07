@@ -541,6 +541,103 @@ async function runTests() {
     ok('全闭环测算真实反映了换回 USDC 后的最终资金', fullCycleProfit < normalNetProfit);
   }
 
+  // =========================================================================
+  // 12. 聪明钱包画像真实性与被动代收过滤测试 (Passive Receiver & Arbitrage Integrity)
+  // =========================================================================
+  {
+    console.log('\n=== 12. 聪明钱包画像真实性与被动代收过滤测试 ===');
+    const scorer = require('../lib/wallet-scorer');
+
+    // 1. 模拟类似 0xcc08 的被动代收钱包：大量接收外部转入，仅有极少转出，且转入转出对手方完全不匹配
+    const passiveWallet = {
+      address: '0xcc0825554d60f93b7983a940e1a129702cb3c7b3',
+      sentCount: 2,
+      receivedCount: 50,
+      bridgeCount: 52,
+      chains: { bsc: 52 },
+      tokens: { BLUAI: 2, WBNB: 20, XAN: 30 },
+      maxUsd: 1000,
+      lastSeen: new Date().toISOString(),
+      dirs: { 'BLUAI|bsc>base': 2 },
+      flows: [
+        // 外部转入 1
+        { sym: 'XAN', from: 'ethereum', to: 'bsc', ts: new Date(Date.now() - 7200000).toISOString(), usd: 800, role: 'receiver', peer: '0x7556699aa8e6a7c9c69bcfaf9debd05f8192b063' },
+        // 主动转出到 0x4a5c
+        { sym: 'BLUAI', from: 'bsc', to: 'base', ts: new Date(Date.now() - 3600000).toISOString(), usd: 300, role: 'sender', peer: '0x4a5c2f8edf362470b47735547e763f131e00d6c1' },
+        // 另一个完全无关的外部地址 0xb1e2 转入 WBNB
+        { sym: 'WBNB', from: 'base', to: 'bsc', ts: new Date(Date.now() - 1800000).toISOString(), usd: 320, role: 'receiver', peer: '0xb1e2c361cf6aca3d1dd5449ea5a1bfce96d89019' },
+      ]
+    };
+
+    const cyc = scorer.detectCapitalCycles(passiveWallet);
+    ok('不同外部地址的转入与转出不能拼凑为假资金闭环 (cycles === 0)', cyc.cycles === 0);
+
+    scorer.scoreSingleWallet(passiveWallet, 100);
+    ok('被动代收钱包被正确标记为 passiveAccount', passiveWallet.passiveAccount === true);
+    ok('被动代收钱包评分受到严惩封顶 <= 15 分', passiveWallet.score <= 15);
+    ok('被动代收钱包评级为 D 级', passiveWallet.grade === 'D');
+    ok('被动代收钱包不包含「职业套利者」标签', !passiveWallet.autoTags.includes('职业套利者'));
+    ok('被动代收钱包不包含「资金闭环」标签', !passiveWallet.autoTags.includes('资金闭环'));
+    ok('被动代收钱包被打上「归集/代收」标签', passiveWallet.autoTags.includes('归集/代收'));
+
+    // 2. 纯接收钱包 (sentCount === 0)
+    const pureReceiver = {
+      address: '0xpure_receiver',
+      sentCount: 0,
+      receivedCount: 15,
+      bridgeCount: 15,
+      chains: { optimism: 15 },
+      tokens: { USDT: 15 },
+      maxUsd: 500,
+      lastSeen: new Date().toISOString(),
+      dirs: {},
+      flows: [
+        { sym: 'USDT', from: 'ethereum', to: 'optimism', ts: new Date().toISOString(), usd: 500, role: 'receiver', peer: '0xsender' }
+      ]
+    };
+    scorer.scoreSingleWallet(pureReceiver, 100);
+    ok('纯接收钱包被打上「代收地址」标签', pureReceiver.autoTags.includes('代收地址'));
+    ok('纯接收钱包评级为 D 级', pureReceiver.grade === 'D');
+
+    // 3. 真实跨链自套利钱包 (Self-Bridge: sender === receiver)
+    const realArbWallet = {
+      address: '0xreal_arb_wallet',
+      sentCount: 20,
+      receivedCount: 20,
+      bridgeCount: 40,
+      chains: { arbitrum: 20, base: 20 },
+      tokens: { PEPE: 10, USDC: 10, ARB: 10 },
+      maxUsd: 25000,
+      lastSeen: new Date().toISOString(),
+      dirs: { 'PEPE|base>arbitrum': 5, 'USDC|arbitrum>base': 5 },
+      flows: [
+        { sym: 'PEPE', from: 'base', to: 'arbitrum', ts: new Date(Date.now() - 3600000).toISOString(), usd: 5000, role: 'self', peer: '0xreal_arb_wallet' },
+        { sym: 'USDC', from: 'arbitrum', to: 'base', ts: new Date(Date.now() - 1800000).toISOString(), usd: 5350, role: 'self', peer: '0xreal_arb_wallet' },
+      ]
+    };
+    const realCyc = scorer.detectCapitalCycles(realArbWallet);
+    ok('真实自跨链能够正确检测到资金闭环 (cycles === 1)', realCyc.cycles === 1);
+    scorer.scoreSingleWallet(realArbWallet, 100);
+    ok('真实套利钱包评分 >= 50 (B级以上)', realArbWallet.score >= 50);
+    ok('真实套利钱包被打上「资金闭环」标签', realArbWallet.autoTags.includes('资金闭环'));
+    ok('真实套利钱包未被误杀为 passiveAccount', realArbWallet.passiveAccount === false);
+
+    // 4. 空代币符号往返拦截 (防止 LayerZero 空 symbol 假往返)
+    const emptySymbolWallet = {
+      address: '0xempty_sym',
+      sentCount: 10,
+      receivedCount: 0,
+      bridgeCount: 10,
+      chains: { arbitrum: 5, bsc: 5 },
+      tokens: {},
+      dirs: { '|arbitrum>bsc': 3, '|bsc>arbitrum': 3 },
+      flows: []
+    };
+    scorer.scoreSingleWallet(emptySymbolWallet, 100);
+    ok('空代币符号不计入同币往返 (roundtrips === 0)', emptySymbolWallet.roundtrips === 0);
+    ok('空代币符号不产生「同币往返」标签', !emptySymbolWallet.autoTags.includes('同币往返'));
+  }
+
   console.log(`\n============================`);
   console.log(`总计测试: ${passed + failed} | 通过: ${passed} | 失败: ${failed}`);
   if (failed > 0) process.exit(1);
