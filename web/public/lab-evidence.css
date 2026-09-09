@@ -46,6 +46,108 @@
   --radius-lg: 12px;
 }
 
+html.light {
+  color-scheme: light;
+  /* Impeccable Washi Paper & Dark Charcoal */
+  --ks-dark-ink: #070604;
+  --ks-lacquer: #f7f4ef;
+  --ks-lacquer-deep: #f0ebe1;
+  --ks-lacquer-raised: #ffffff;
+  --ks-graphite: #e6e0d3;
+  --ks-graphite-2: #ded6c5;
+  --ks-champagne: #1f1d19;
+  --ks-text: #1f1d19;
+  --ks-text-muted: #5c564b;
+  --ks-text-faint: #8a8273;
+  --ks-rule: rgba(31, 29, 25, 0.1);
+  --ks-edge: rgba(31, 29, 25, 0.25);
+  --ks-kinpaku: #b8860b;
+  --ks-kinpaku-vivid: #d4a028;
+  --ks-kinpaku-pale: #997015;
+  --ks-patina: #0d7a6b;
+  --ks-patina-pale: #137768;
+  --ks-vermilion: #c5301a;
+  --ks-vermilion-pale: #e65138;
+
+  --bg-base: #f0ebe1;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f7f4ef;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(31, 29, 25, 0.1);
+  --border-card: rgba(31, 29, 25, 0.1);
+  --border-glow: rgba(184, 134, 11, 0.35);
+  --text-primary: #1f1d19;
+  --text-secondary: #5c564b;
+  --text-muted: #8a8273;
+}
+
+html.light body.kinpaku-chrome {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+html.light .lab-header {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: var(--border-subtle);
+}
+
+html.light .evidence-table th {
+  background: #f7f4ef;
+  color: var(--text-muted);
+}
+
+html.light .evidence-detail-row > td {
+  background: #f7f4ef;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+html.light .evidence-panel {
+  background: #ffffff;
+  border: 1px solid rgba(31, 29, 25, 0.12);
+  box-shadow: 0 1px 4px rgba(31, 29, 25, 0.05);
+}
+
+html.light .evidence-leg.is-missing {
+  background: rgba(31, 29, 25, 0.03);
+  border-color: rgba(31, 29, 25, 0.15);
+}
+
+html.light .evidence-raw pre {
+  background: #f7f4ef;
+  border-color: rgba(31, 29, 25, 0.12);
+  color: #0d7a6b;
+}
+
+html.light .btn-copy-raw {
+  background: #ffffff;
+  border-color: rgba(31, 29, 25, 0.15);
+  color: var(--text-secondary);
+}
+
+html.light .btn-copy-raw:hover {
+  border-color: var(--ks-kinpaku);
+  color: var(--ks-kinpaku);
+}
+
+html.light .evidence-badge.neutral {
+  background: rgba(31, 29, 25, 0.06);
+  border-color: rgba(31, 29, 25, 0.12);
+  color: var(--text-secondary);
+}
+
+html.light .evidence-summary-row:hover > td {
+  background-color: rgba(184, 134, 11, 0.04);
+}
+
+html.light .lab-section,
+html.light .lab-disclaimer {
+  box-shadow: 0 2px 10px -1px rgba(31, 29, 25, 0.06);
+}
+
+html.light .lab-discovery-status {
+  background: rgba(230, 224, 211, 0.4);
+}
+
 /* Browser Surfaces & Polish */
 ::selection {
   background: rgba(245, 192, 66, 0.35);
@@ -176,6 +278,13 @@ a:focus-visible {
   padding: 2px 8px;
   border-radius: 12px;
   font-family: var(--font-mono);
+  transition: all 0.2s ease;
+}
+
+.lab-live-badge.is-paused {
+  color: var(--ks-vermilion-pale);
+  background: rgba(230, 81, 56, 0.12);
+  border-color: rgba(230, 81, 56, 0.35);
 }
 
 .pulse-dot {
@@ -185,6 +294,12 @@ a:focus-visible {
   background: var(--ks-patina);
   box-shadow: 0 0 8px var(--ks-patina);
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pulse-dot.is-paused {
+  background: var(--ks-vermilion);
+  box-shadow: 0 0 8px var(--ks-vermilion);
 }
 
 @keyframes pulse-glow {
@@ -201,7 +316,41 @@ a:focus-visible {
 .lab-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.btn-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-theme-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--ks-kinpaku);
+  background: var(--bg-elevated);
+}
+
+html.light .theme-icon-sun {
+  display: none !important;
+}
+html.light .theme-icon-moon {
+  display: block !important;
+}
+html:not(.light) .theme-icon-sun {
+  display: block !important;
+}
+html:not(.light) .theme-icon-moon {
+  display: none !important;
 }
 
 .btn-return {
@@ -612,15 +761,64 @@ a:focus-visible {
 .lab-status-pill {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.4;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
 }
 
 .lab-status-pill:empty {
   display: none;
+}
+
+.lab-status-pill.status-busy {
+  background: rgba(245, 192, 66, 0.08);
+  border-color: rgba(245, 192, 66, 0.3);
+  color: var(--ks-kinpaku-pale);
+}
+
+.lab-status-pill.status-success {
+  background: rgba(69, 196, 176, 0.08);
+  border-color: rgba(69, 196, 176, 0.3);
+  color: var(--ks-patina-pale);
+}
+
+.lab-status-pill.status-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.lab-status-pill.status-paused {
+  background: rgba(230, 81, 56, 0.1);
+  border-color: rgba(230, 81, 56, 0.35);
+  color: var(--ks-vermilion-pale);
+}
+
+.lab-status-pill.status-error {
+  background: rgba(230, 81, 56, 0.12);
+  border-color: var(--ks-vermilion);
+  color: #ff9988;
+}
+
+.lab-status-pill .status-icon {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.lab-status-pill .status-icon.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Evidence Table & Drilldown */
@@ -798,7 +996,7 @@ dd.bad {
 }
 
 .evidence-detail-row > td {
-  padding: 0 14px 18px;
+  padding: 8px 14px 18px;
   background: rgba(13, 12, 10, 0.6);
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -1074,6 +1272,110 @@ dd.bad {
   color: var(--text-muted);
   font-size: 13px;
   font-family: var(--font-sans) !important;
+}
+
+/* Evidence Pagination & Load More Controls */
+.evidence-pagination {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.evidence-page-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.evidence-page-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ks-kinpaku);
+  box-shadow: 0 0 6px rgba(245, 192, 66, 0.4);
+  flex-shrink: 0;
+}
+
+.evidence-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.evidence-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.evidence-page-btn:hover {
+  border-color: var(--ks-kinpaku);
+  color: var(--ks-kinpaku);
+  background: rgba(245, 192, 66, 0.08);
+}
+
+.evidence-page-btn.btn-primary {
+  background: rgba(245, 192, 66, 0.12);
+  border-color: rgba(245, 192, 66, 0.35);
+  color: var(--ks-kinpaku);
+}
+
+.evidence-page-btn.btn-primary:hover {
+  background: rgba(245, 192, 66, 0.22);
+  border-color: var(--ks-kinpaku);
+  color: #ffffff;
+}
+
+html.light .evidence-pagination {
+  background: #f7f4ef;
+  border-color: rgba(31, 29, 25, 0.1);
+}
+
+html.light .evidence-page-btn {
+  background: #ffffff;
+  border-color: rgba(31, 29, 25, 0.15);
+  color: var(--text-primary);
+}
+
+html.light .evidence-page-btn:hover {
+  border-color: var(--ks-kinpaku);
+  color: var(--ks-kinpaku);
+  background: rgba(184, 134, 11, 0.06);
+}
+
+html.light .evidence-page-btn.btn-primary {
+  background: rgba(184, 134, 11, 0.1);
+  border-color: rgba(184, 134, 11, 0.3);
+  color: #997015;
+}
+
+html.light .evidence-page-btn.btn-primary:hover {
+  background: rgba(184, 134, 11, 0.18);
+  border-color: #997015;
+  color: #1f1d19;
 }
 
 /* Toast Component */

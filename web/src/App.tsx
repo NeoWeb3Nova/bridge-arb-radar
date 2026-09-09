@@ -47,9 +47,12 @@ export const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [alertOpportunity]);
 
+  const stateRequest = useRef<Promise<void> | null>(null);
   const fetchState = async () => {
+    if (stateRequest.current) return stateRequest.current;
+    stateRequest.current = (async () => {
     try {
-      const res = await fetch('/api/state');
+      const res = await fetch('/api/state', { signal: AbortSignal.timeout(10000) });
       const data = await res.json();
       if (data.ok) {
         setState(data);
@@ -58,6 +61,8 @@ export const App: React.FC = () => {
     } catch (e) {
       console.error('Failed to load state', e);
     }
+    })();
+    try { await stateRequest.current; } finally { stateRequest.current = null; }
   };
 
   useEffect(() => {
@@ -116,29 +121,17 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!scanning) return;
-    const pollTimer = setInterval(() => {
-      fetch('/api/state')
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.ok) {
-            setState(d);
-            if (!d.scanning) setScanning(false);
-          }
-        })
-        .catch(() => {});
-    }, 3500);
-
-    const fallbackTimer = setTimeout(() => {
-      setScanning(false);
-      fetchState();
-    }, 45000);
-
-    return () => {
-      clearInterval(pollTimer);
-      clearTimeout(fallbackTimer);
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      if (!document.hidden && (scanning || !sseConnected)) await fetchState();
+      if (!stopped) timer = setTimeout(poll, scanning ? 5000 : 15000);
     };
-  }, [scanning]);
+    const visible = () => { if (!document.hidden) fetchState(); };
+    timer = setTimeout(poll, 5000);
+    document.addEventListener('visibilitychange', visible);
+    return () => { stopped = true; clearTimeout(timer); document.removeEventListener('visibilitychange', visible); };
+  }, [scanning, sseConnected]);
 
   const handleScan = async () => {
     setScanning(true);
@@ -147,7 +140,6 @@ export const App: React.FC = () => {
     } catch (e) {
       console.error(e);
     } finally {
-      setScanning(false);
       fetchState();
     }
   };

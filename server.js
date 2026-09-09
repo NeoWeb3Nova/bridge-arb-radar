@@ -80,7 +80,7 @@ function scheduleScan() {
   nextScanAtMs = Date.now() + mins * 60000;
   scanTimer = setInterval(async () => {
     nextScanAtMs = Date.now() + mins * 60000;
-    if (scanning) return;
+    if (scanning || require('./lib/net').governor.isPaused()) return;
     scanning = true;
     try { await engine.runScan({}); } catch (e) { console.error('[scan]', e.message); } finally {
       scanning = false;

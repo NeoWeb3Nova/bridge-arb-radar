@@ -9,6 +9,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700&family=Alumni+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/lab-evidence.css">
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('bar_theme');
+        if (saved === 'light') {
+          document.documentElement.classList.add('light');
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body class="kinpaku-chrome">
   <!-- Impeccable Top Navigation Bar -->
@@ -17,7 +31,7 @@
       <div class="lab-brand">
         <div class="lab-logo" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M5 2.5 L13.5 2.5 L5.5 21.5 L5 21.5 Q2.5 21.5 2.5 19 L2.5 5 Q2.5 2.5 5 2.5 Z" />
+            <path d="M5 2.5 L13.5 2.5 L5.5 21.5 L5 21.5 Q2.5 2.5 5 2.5 Z" />
             <path d="M16.5 2.5 L19 2.5 Q21.5 2.5 21.5 5 L21.5 19 Q21.5 21.5 19 21.5 L8.5 21.5 Z" />
           </svg>
         </div>
@@ -25,8 +39,8 @@
           <div class="lab-brand-title">
             <span class="lab-wordmark">Bridge Arb Radar</span>
             <span class="lab-badge-impeccable">PAPER LAB</span>
-            <span class="lab-live-badge">
-              <span class="pulse-dot"></span>
+            <span id="livePulseBadge" class="lab-live-badge">
+              <span id="livePulseDot" class="pulse-dot"></span>
               <span id="livePulseText">自动监控就绪</span>
             </span>
           </div>
@@ -34,6 +48,22 @@
         </div>
       </div>
       <div class="lab-header-actions">
+        <button id="themeToggle" type="button" class="btn-theme-toggle" title="切换深色/浅色主题" aria-label="切换深色/浅色主题">
+          <svg class="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
         <a href="/" class="btn-return">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -158,6 +188,9 @@
       <p class="lab-section-desc" style="margin-top:14px; margin-bottom:0;">自动模式会自己寻找和验证机会。新路线先试算 $100，后续轮换 $50 / $200 / $25；正向信号在预计搬运时间之后按原金额再查一次。覆盖已入库资产与新桥流，不代表覆盖全市场。只有本机服务运行时才继续。</p>
     </section>
 
+    <!-- Request Governance & Background Tasks Section -->
+    <request-status class="lab-section" aria-label="请求调度与全局防护"></request-status>
+
     <!-- Evidence Table Section -->
     <section class="lab-section" aria-label="报价证据报告">
       <div class="lab-section-head">
@@ -179,12 +212,26 @@
           <tbody id="rows"></tbody>
         </table>
       </div>
+
+      <!-- Evidence Pagination & Load More Controls -->
+      <div id="evidencePagination" class="evidence-pagination" style="display:none">
+        <div class="evidence-page-info">
+          <span class="evidence-page-dot"></span>
+          <span id="evidencePageText">读取报价记录…</span>
+        </div>
+        <div class="evidence-page-actions" id="evidencePageActions">
+          <button type="button" class="evidence-page-btn btn-primary" id="btnLoadMore">加载更多 (+10)</button>
+          <button type="button" class="evidence-page-btn" id="btnShowAll">显示全部</button>
+          <button type="button" class="evidence-page-btn" id="btnCollapse" style="display:none">收起至前 10 条</button>
+        </div>
+      </div>
     </section>
   </main>
 
   <div id="toast" class="lab-toast" aria-live="polite"></div>
 
   <script src="/lab-evidence.js"></script>
+  <script defer src="/request-status.js"></script>
   <script>
     let state = null;
     const el = id => document.getElementById(id);
@@ -205,7 +252,7 @@
     };
 
     async function api(url, body) {
-      const r = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+      const r = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { signal: AbortSignal.timeout(10000) });
       const j = await r.json();
       if (!j.ok) throw Error(j.error || '请求失败');
       return j;
@@ -258,43 +305,96 @@
 
       // Live pulse text in navbar
       const pulseText = el('livePulseText');
+      const pulseBadge = el('livePulseBadge');
+      const pulseDot = el('livePulseDot');
       if (pulseText) {
-        pulseText.textContent = s.busy ? '正在自动询价…' : s.enabled ? '自动监控运行中' : '自动监控已暂停';
+        pulseText.textContent = s.requestsPaused ? '外部请求已总暂停' : s.busy ? '正在自动询价…' : s.enabled ? '自动监控运行中' : '自动监控已暂停';
+      }
+      if (pulseBadge && pulseDot) {
+        if (s.requestsPaused) {
+          pulseBadge.classList.add('is-paused');
+          pulseDot.classList.add('is-paused');
+        } else {
+          pulseBadge.classList.remove('is-paused');
+          pulseDot.classList.remove('is-paused');
+        }
       }
 
       // Status pill update
-      let statusText = '';
-      if (s.providerBackoffUntil) {
-        statusText = '⚠️ 报价服务限流，自动暂停至 ' + new Date(s.providerBackoffUntil).toLocaleTimeString();
+      if (s.requestsPaused) {
+        setStatus('paused', '全部外部请求已暂停；页面仅更新本地结果。');
+      } else if (s.providerBackoffUntil) {
+        setStatus('warning', '报价服务限流，自动暂停至 ' + new Date(s.providerBackoffUntil).toLocaleTimeString());
       } else if (s.busy) {
-        statusText = '⚡ 正在自动处理 ' + (s.discovery?.current?.symbol || '路线') + ' · ' + (stageLabels[s.discovery?.current?.stage] || '报价') + '…';
+        setStatus('busy', '正在自动处理 ' + (s.discovery?.current?.symbol || '路线') + ' · ' + (stageLabels[s.discovery?.current?.stage] || '报价') + '…');
       } else if (s.enabled) {
-        statusText = '✓ 自动观察已开启；下次调度：' + (s.nextRunAt ? new Date(s.nextRunAt).toLocaleTimeString() : '等待调度');
+        setStatus('success', '自动观察已开启；下次调度：' + (s.nextRunAt ? new Date(s.nextRunAt).toLocaleTimeString() : '等待调度'));
       } else {
-        statusText = '○ 自动观察已停止';
+        setStatus('idle', '自动观察已停止');
       }
-      el('status').textContent = statusText;
 
       window.LabEvidence.renderReports(s.reports);
     }
 
+    const statusIcons = {
+      busy: '<svg class="status-icon spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>',
+      warning: '<svg class="status-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+      paused: '<svg class="status-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="10" y1="15" x2="10" y2="9"></line><line x1="14" y1="15" x2="14" y2="9"></line></svg>',
+      success: '<svg class="status-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+      error: '<svg class="status-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+      idle: '<svg class="status-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="6"></circle></svg>'
+    };
+
+    function setStatus(type, msg) {
+      const statusEl = el('status');
+      if (!statusEl) return;
+      if (!msg) {
+        statusEl.textContent = '';
+        statusEl.className = 'lab-status-pill';
+        return;
+      }
+      statusEl.className = 'lab-status-pill status-' + type;
+      statusEl.innerHTML = (statusIcons[type] || statusIcons.idle) + '<span>' + msg + '</span>';
+    }
+
+    const themeBtn = el('themeToggle');
+    if (themeBtn) {
+      themeBtn.onclick = () => {
+        const isLight = document.documentElement.classList.contains('light');
+        if (isLight) {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('bar_theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+          localStorage.setItem('bar_theme', 'light');
+        }
+      };
+    }
+
+    let refreshing = null;
     async function refresh() {
+      if (refreshing) return refreshing;
+      refreshing = (async () => {
       try {
         render(await api('/api/lab/state'));
       } catch (e) {
-        el('status').textContent = '⚠️ ' + e.message;
+        setStatus('warning', e.message);
       }
+      })();
+      try { await refreshing; } finally { refreshing = null; }
     }
 
     async function run(params) {
       el('check').disabled = true;
       el('custom').disabled = true;
-      el('status').textContent = '⚡ 正在向服务商查询四段完整报价…';
+      setStatus('busy', '正在向服务商查询四段完整报价…');
       try {
         await api('/api/lab/check', { ...params, amountUsd: Number(el('amount').value) });
         window.LabEvidence?.showToast?.('询价完成，已生成四段报价报告');
       } catch (e) {
-        el('status').textContent = '❌ ' + e.message;
+        setStatus('error', e.message);
         window.LabEvidence?.showToast?.('询价失败：' + e.message);
       } finally {
         await refresh();
@@ -328,7 +428,7 @@
         render(await api('/api/lab/config', { enabled: nextState }));
         window.LabEvidence?.showToast?.(nextState ? '已启动自动观察调度' : '已停止自动观察调度');
       } catch (e) {
-        el('status').textContent = '❌ ' + e.message;
+        setStatus('error', e.message);
       }
     };
 
@@ -354,8 +454,18 @@
     }
     el('sellChain').value = 'arbitrum';
 
-    refresh();
-    setInterval(refresh, 5000);
+    let refreshTimer, polling = false;
+    async function poll() {
+      if (polling) return;
+      polling = true;
+      clearTimeout(refreshTimer);
+      if (!document.hidden) await refresh();
+      polling = false;
+      refreshTimer = setTimeout(poll, 5000);
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+    document.addEventListener('request-policy-change', () => refresh());
+    poll();
   </script>
 </body>
 </html>

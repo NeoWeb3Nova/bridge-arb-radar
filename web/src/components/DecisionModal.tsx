@@ -26,14 +26,21 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
   // 实时验价相关状态
   const [liveQuote, setLiveQuote] = useState<LiveQuoteResult | null>(null);
   const [loadingLive, setLoadingLive] = useState(false);
-  const [principalUsd, setPrincipalUsd] = useState<number>(1000);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [countdown, setCountdown] = useState(10);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [principalUsd, setPrincipalUsd] = useState<number>(100);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const deadline = useRef(Date.now() + 30000);
+  const liveRequest = useRef<string | null>(null);
+  const requestVersion = useRef(0);
+  const [liveError, setLiveError] = useState('');
 
   const fetchLiveQuote = async (isManual = false) => {
     if (!item) return;
-    setLoadingLive(true);
+    const requestKey = JSON.stringify([item.buyChain, item.buyAddress, item.buyPairAddress, item.sellChain, item.sellAddress, item.sellPairAddress, principalUsd]);
+    if (liveRequest.current === requestKey) return;
+    liveRequest.current = requestKey;
+    const version = ++requestVersion.current;
+    setLoadingLive(true); setLiveError('');
     try {
       const p = new URLSearchParams({
         symbol: item.symbol,
@@ -50,16 +57,16 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
         amountUsd: String(principalUsd),
         force: isManual ? '1' : '0',
       });
-      const res = await fetch(`/api/opportunity/live?${p.toString()}`);
+      const res = await fetch(`/api/opportunity/live?${p.toString()}`, { signal: AbortSignal.timeout(60000) });
       const data = await res.json();
-      if (data.ok) {
-        setLiveQuote(data);
+      if (version === requestVersion.current) {
+        if (data.ok) setLiveQuote(data);
+        else setLiveError(data.error || '未取得有效报价');
       }
     } catch (e) {
-      console.error('Failed to fetch live quote:', e);
+      if (version === requestVersion.current) setLiveError('实时验价请求未完成，请稍后重试');
     } finally {
-      setLoadingLive(false);
-      setCountdown(10);
+      if (version === requestVersion.current) { setLoadingLive(false); liveRequest.current = null; deadline.current = Date.now() + 30000; setCountdown(30); }
     }
   };
 
@@ -70,32 +77,26 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
       setLogText('');
       setPnlDelta('');
       setLiveQuote(null);
-      fetchLiveQuote(true);
+      setAutoRefresh(false);
     }
   }, [item]);
 
-  // 本金切换时重新测算
   useEffect(() => {
-    if (item && liveQuote) {
-      fetchLiveQuote(false);
-    }
-  }, [principalUsd]);
+    if (item) fetchLiveQuote(false);
+    return () => { requestVersion.current++; liveRequest.current = null; };
+  }, [item, principalUsd]);
 
-  // 自动倒计时与定时轮询
+  // Optional polling is visible-only and waits for the previous request to finish.
   useEffect(() => {
     if (!item || !autoRefresh) return;
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          fetchLiveQuote(false);
-          return 10;
-        }
-        return prev - 1;
-      });
+    deadline.current = Date.now() + 30000;
+    const timer = setInterval(() => {
+      if (document.hidden || liveRequest.current) return;
+      const remaining = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
+      setCountdown(remaining);
+      if (remaining === 0) fetchLiveQuote(false);
     }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => clearInterval(timer);
   }, [item, autoRefresh, principalUsd]);
 
   if (!item) return null;
@@ -198,7 +199,7 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
                 onChange={(e) => setAutoRefresh(e.target.checked)} 
                 className="rounded border-[var(--border-subtle)] accent-[#f5c042] cursor-pointer"
               />
-              <span>自动轮询 {autoRefresh ? `(${countdown}s)` : ''}</span>
+              <span title="会请求外部行情和报价接口，与后台监控共享额度；隐藏页面时停止轮询。">定时验价 · 消耗额度 {autoRefresh ? `(${countdown}s)` : '（默认关闭）'}</span>
             </label>
 
             {/* 手动刷新按钮 */}
@@ -490,6 +491,7 @@ export const DecisionModal: React.FC<Props> = ({ item, onClose, onSaved }) => {
             </div>
           </div>
 
+          {liveError && <p role="status" className="text-xs text-amber-400">{liveError}</p>}
           {/* 3. 实时跨链通道费用与净盈亏动态试算 */}
           <div className="p-3.5 rounded-lg bg-[var(--bg-elevated)]/40 border border-[var(--border-subtle)] space-y-3">
             <div className="flex items-center justify-between">

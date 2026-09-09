@@ -76,6 +76,12 @@
     const target = finite(report.assumptions?.minNetUsd) ? report.assumptions.minNetUsd : 2;
     const net = report.result?.netUsd;
     const known = {
+      MONITOR_STOPPED: ['监控已停止', '停止指令生效，本次不再请求后续报价。此前已发出的请求允许结束。', '需要继续时重新开启监控并获取新的完整报价。'],
+      REQUESTS_PAUSED: ['外部请求已总暂停', '统一暂停开关已拦截新的外部 API / RPC 请求。', '在请求与后台任务面板恢复外部请求。'],
+      LOCAL_QUOTE_BUDGET: ['本机报价预算不足', '本服务的两小时报价预算已触及保护上限。', '等待滚动额度释放；重启服务不会清零已记录的用量。'],
+      REQUEST_QUEUE_TIMEOUT: ['请求排队超时', '同一服务商的请求正在排队，本次未在等待上限内发出。', '等待当前请求结束后重新验证。'],
+      REQUEST_QUEUE_FULL: ['请求队列已满', '统一请求队列已达到容量上限。', '待队列释放后重试。'],
+      BUDGET_STORAGE_ERROR: ['报价额度记录保存失败', '无法可靠记录本次额度消耗，系统已停止发出报价请求。', '检查本机数据目录的写入状态后重试。'],
       NET_BELOW_TARGET: ['扣费后净额未达门槛', finite(net) ? '本次报价净额为 ' + money(net) + '，观察门槛为 ' + money(target) + '，差额 ' + money(Math.max(0, target - net)) + '。' : '四段报价扣除费用后，未达到观察门槛。', '本次样本不进入正向复测；后续发现新信号时再验证。'],
       NO_ROUTE: ['服务商未返回可用路线', '当前资产、链与金额组合没有可用报价，闭环未完成。', '本次验证停止；有新路线或新报价时再检查。'],
       RATE_LIMITED: ['报价服务请求受限', '服务商触发限流，本次未能取得完整报价。', blocker.retryAt ? '限流截止时间：' + date(blocker.retryAt) + '。自动观察开启时，由调度器在恢复后继续。' : '等待报价服务恢复；自动观察开启时由调度器继续。'],
@@ -99,6 +105,7 @@
   function conclusion(report) {
     const expired = report.status === 'POSITIVE_INDICATION' && finite(report.validUntil) && Date.now() > report.validUntil;
     const review = report.review?.state;
+    if (review === 'MONITOR_STOPPED') return { tone: 'neutral', title: '监控已停止', summary: '已保留本次取得的证据，未继续后续请求或复核。' };
     if (review === 'SIGNAL_NOT_REPEATED') return { tone: 'warn', title: '复测未重现', summary: '后续报价未再次满足条件，原正向信号不成立。' };
     if (expired || review === 'RECHECK_EXPIRED') return { tone: 'neutral', title: '正向样本已过期', summary: '历史报价曾达到门槛，当前不能作为有效机会。' };
     if (report.status === 'BLOCKED') return { tone: 'warn', title: '报价验证受阻', summary: '仅取得 ' + (report.legs?.length || 0) + ' / 4 段报价，尚不能判断完整净额。' };
@@ -109,6 +116,7 @@
 
   function nextStep(report) {
     const review = report.review?.state;
+    if (review === 'MONITOR_STOPPED') return '需要继续时恢复监控或外部请求，并获取新的完整报价。';
     if (review === 'SIGNAL_NOT_REPEATED') return '正向信号未重现；需后续新信号重新验证。';
     if (review === 'RECHECK_EXPIRED') return '复测排队已过期，等待重新发现候选。';
     if (review === 'SECURITY_UNCONFIRMED') return '合约安全数据尚未确认，需补齐安全核验。';
@@ -229,20 +237,44 @@
     t._timer = setTimeout(() => t.classList.remove('show'), duration);
   }
 
+  const DEFAULT_PAGE_SIZE = 10;
+  let displayLimit = DEFAULT_PAGE_SIZE;
+  let cachedReports = [];
   const rows = new Map();
+
   function renderReports(reports) {
-    const tbody = document.getElementById('rows'), active = new Set();
-    if (!reports?.length) {
+    if (Array.isArray(reports)) {
+      cachedReports = reports;
+    } else {
+      reports = cachedReports;
+    }
+
+    const tbody = document.getElementById('rows');
+    if (!tbody) return;
+    const active = new Set();
+    const total = reports?.length || 0;
+
+    const pagination = document.getElementById('evidencePagination');
+    const pageText = document.getElementById('evidencePageText');
+    const loadMoreBtn = document.getElementById('btnLoadMore');
+    const showAllBtn = document.getElementById('btnShowAll');
+    const collapseBtn = document.getElementById('btnCollapse');
+
+    if (!total) {
       rows.clear();
       const tr = node('tr'), td = node('td', '暂时没有报价证据。自动验证完成后，将显示各段报价、费用与筛选原因。', 'evidence-empty');
       td.colSpan = 5;
       tr.append(td);
       tbody.replaceChildren(tr);
+      if (pagination) pagination.style.display = 'none';
       return;
     }
+
     tbody.querySelector('.evidence-empty')?.parentElement?.remove();
 
-    reports.forEach((report, index) => {
+    // Render only up to displayLimit reports
+    const visibleReports = reports.slice(0, displayLimit);
+    visibleReports.forEach((report, index) => {
       const key = String(report.id || [report.startedAt, report.symbol, report.buyChain, report.sellChain, index].join('-'));
       active.add(key);
       const verdict = conclusion(report), signature = JSON.stringify(report) + '|' + verdict.title;
@@ -331,11 +363,57 @@
       if (tbody.children[position + 1] !== entry.detail) tbody.insertBefore(entry.detail, tbody.children[position + 1] || null);
     });
 
+    // Remove any rows that are outside the visible limit
     for (const [key, entry] of rows) {
       if (!active.has(key)) {
         entry.tr.remove();
         entry.detail.remove();
         rows.delete(key);
+      }
+    }
+
+    // Update pagination controls
+    if (pagination && pageText) {
+      pagination.style.display = 'flex';
+      const visibleCount = visibleReports.length;
+
+      if (total <= DEFAULT_PAGE_SIZE) {
+        pageText.textContent = '共 ' + total + ' 条报价证据记录';
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+        if (showAllBtn) showAllBtn.style.display = 'none';
+        if (collapseBtn) collapseBtn.style.display = 'none';
+      } else if (displayLimit < total) {
+        const nextBatch = Math.min(DEFAULT_PAGE_SIZE, total - displayLimit);
+        pageText.textContent = '已展示前 ' + visibleCount + ' 条 · 共 ' + total + ' 条报价证据记录';
+        if (loadMoreBtn) {
+          loadMoreBtn.style.display = 'inline-flex';
+          loadMoreBtn.textContent = '加载更多 (+' + nextBatch + ')';
+          loadMoreBtn.onclick = () => {
+            displayLimit += DEFAULT_PAGE_SIZE;
+            renderReports();
+          };
+        }
+        if (showAllBtn) {
+          showAllBtn.style.display = 'inline-flex';
+          showAllBtn.textContent = '显示全部 (' + total + ')';
+          showAllBtn.onclick = () => {
+            displayLimit = total;
+            renderReports();
+          };
+        }
+        if (collapseBtn) collapseBtn.style.display = 'none';
+      } else {
+        pageText.textContent = '已显示全部 ' + total + ' 条报价证据记录';
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+        if (showAllBtn) showAllBtn.style.display = 'none';
+        if (collapseBtn) {
+          collapseBtn.style.display = 'inline-flex';
+          collapseBtn.textContent = '收起至前 ' + DEFAULT_PAGE_SIZE + ' 条';
+          collapseBtn.onclick = () => {
+            displayLimit = DEFAULT_PAGE_SIZE;
+            renderReports();
+          };
+        }
       }
     }
   }

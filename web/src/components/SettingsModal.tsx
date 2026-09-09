@@ -892,6 +892,7 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
 
           {activeTab === 'scan' && (
             <div className="space-y-4">
+              {React.createElement('request-status')}
               {/* 自动扫描主开关 */}
               <div className="bg-[var(--bg-surface)] p-3 rounded-lg border border-[var(--border-subtle)] flex items-center justify-between">
                 <div>
@@ -900,7 +901,7 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
                     <span>{tr('setScanAutoEnable')}</span>
                   </div>
                   <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                    开启后雷达引擎将在后台周期性全自动轮巡各大主流跨链桥流水
+                    此开关只控制后台桥流水扫描；不控制自动机会监控，也不控制页面读取本地结果。需要全部停用外部请求时，请使用上方总暂停。
                   </div>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -913,7 +914,7 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
                   <span className={`text-[11px] px-2 py-0.5 rounded font-mono font-semibold ${
                     scanAutoEnabled ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400'
                   }`}>
-                    {scanAutoEnabled ? '运行中' : '已暂停'}
+                    {scanAutoEnabled ? '定时已启用' : '定时已关闭'}
                   </span>
                 </label>
               </div>

@@ -84,9 +84,15 @@ export const ArbitrageMatrix: React.FC<Props> = ({
     return () => clearInterval(timer);
   }, []);
 
+  const quoteRequests = useRef(new Set<string>());
+  const quoteVersions = useRef<Record<string, number>>({});
   const fetchLiveQuote = async (opp: OpportunityItem, capital: number, force = false) => {
     const key = `${opp.symbol}-${opp.buyChain}-${opp.sellChain}`;
     if (!force && liveQuotes[key]) return;
+    const requestKey = JSON.stringify([opp.buyChain, opp.buyAddress, opp.buyPairAddress, opp.sellChain, opp.sellAddress, opp.sellPairAddress, capital]);
+    if (quoteRequests.current.has(requestKey)) return;
+    quoteRequests.current.add(requestKey);
+    const version = (quoteVersions.current[key] || 0) + 1; quoteVersions.current[key] = version;
     setLoadingQuotes((prev) => ({ ...prev, [key]: true }));
     try {
       const q = new URLSearchParams({
@@ -108,7 +114,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
       const res = await fetch(`/api/quote/live?${q.toString()}`);
       if (res.ok) {
         const data: LiveQuoteData = await res.json();
-        if (data && data.ok) {
+        if (data && data.ok && quoteVersions.current[key] === version) {
           setLiveQuotes((prev) => ({ ...prev, [key]: data }));
           if (force) {
             setJustRefreshedKey(key);
@@ -119,7 +125,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
     } catch (e) {
       console.warn('Failed to fetch live quote:', e);
     } finally {
-      setLoadingQuotes((prev) => ({ ...prev, [key]: false }));
+      quoteRequests.current.delete(requestKey);
+      if (quoteVersions.current[key] === version) setLoadingQuotes((prev) => ({ ...prev, [key]: false }));
     }
   };
 
