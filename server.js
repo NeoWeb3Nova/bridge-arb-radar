@@ -11,7 +11,7 @@ const events = require('./lib/events');
 const { createApiRoutes } = require('./lib/routes');
 
 const PORT = Number(process.env.PORT || 8848);
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.HOST || '127.0.0.1';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 const MIME = {
@@ -173,6 +173,7 @@ server.listen(PORT, HOST, () => {
   store.load();
   maybeMigrate();
   scheduleScan();
+  require('./lib/paper-lab').start();
   scheduleBackup();
   scheduleWalCheckpoint();
 

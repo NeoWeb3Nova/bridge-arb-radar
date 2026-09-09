@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict');
+const net=require('../lib/net');let replies=[],urls=[];
+net.request=async url=>{urls.push(url);return {ok:true,json:replies.shift()}};
+const prices=require('../lib/prices');
+const base='0x1111111111111111111111111111111111111111';
+const quote='0x2222222222222222222222222222222222222222';
+const pair={chainId:'base',pairAddress:'0x3333333333333333333333333333333333333333',dexId:'test',priceUsd:'4',priceNative:'2',baseToken:{address:base,symbol:'A'},quoteToken:{address:quote,symbol:'B'},liquidity:{usd:10000,base:1250,quote:2500}};
+(async()=>{
+replies=[{pair},{pair}];
+assert.equal((await prices.quotePair('base',pair.pairAddress,{},base)).priceUsd,4);
+assert.equal((await prices.quotePair('base',pair.pairAddress,{},quote)).priceUsd,2);
+assert.equal(urls.length,2,'cache must distinguish price direction');
+replies=[{pairs:[pair]}];assert.equal(await prices.quote('base','0x4444444444444444444444444444444444444444',{}),null);
+replies=[{pair}];assert.equal(await prices.quotePair('base',pair.pairAddress,{},'0x5555555555555555555555555555555555555555'),null);
+replies=[{pairs:[pair]}];const result=await prices.multiChainQuotesBatch([{chain:'base',address:quote}],{});assert.equal(result[0].quote.priceUsd,2,'batch must keep quote-side tokens');
+const sol='AbCdEF123456789xyz';const solPair={...pair,chainId:'solana',baseToken:{address:sol,symbol:'SOLTEST'}};
+replies=[{pairs:[solPair]}];const solResult=await prices.multiChainQuotesBatch([{chain:'solana',address:sol}],{});assert.equal(solResult.length,1);assert.ok(urls.at(-1).includes(sol),'base58 request must preserve case');
+const n=urls.length;await prices.quotePair('base',pair.pairAddress,{},base);assert.equal(urls.length,n);
+replies=[{pair:{...pair,priceUsd:'5'}}];assert.equal((await prices.quotePair('base',pair.pairAddress,{},base,true)).priceUsd,5);
+replies=[{pairs:[]}];assert.equal(await prices.quote('base',base,{},'unavailable',true),null,'do not silently substitute a different pool');
+console.log('8 price integrity scenarios passed');
+})().catch(e=>{console.error(e);process.exitCode=1});

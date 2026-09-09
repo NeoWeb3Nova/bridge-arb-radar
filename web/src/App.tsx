@@ -193,6 +193,7 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            <a href="/lab.html" className="text-xs text-[#f5c042] px-2 py-1">{locale === 'zh' ? '自动监控' : 'Auto Monitor'}</a>
             {/* 语言切换 */}
             <button
               onClick={toggleLocale}

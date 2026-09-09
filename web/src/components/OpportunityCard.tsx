@@ -85,10 +85,10 @@ export const OpportunityCard: React.FC<Props> = ({ opp, onSelect, stablecoinsWhi
                 ) : (
                   <span 
                     className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
-                    title="✓ 智能合约代码体检通过: 0%买卖税 · 无貔貅限制"
+                    title={opp.security.safe === true ? '安全数据检查通过；仍需交易模拟' : '安全数据未知或未完成'}
                   >
                     <ShieldCheck size={10} className="text-emerald-400" />
-                    <span>0%税</span>
+                    <span>{opp.security.safe === true ? '已检查' : '未知'}</span>
                   </span>
                 )
               )}

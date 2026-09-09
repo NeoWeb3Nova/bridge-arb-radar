@@ -38,8 +38,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
   // 1. Controls State
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  const [capitalUsd, setCapitalUsd] = useState<number>(1000);
-  const [customCapital, setCustomCapital] = useState<string>('1000');
+  const [capitalUsd, setCapitalUsd] = useState<number>(100);
+  const [customCapital, setCustomCapital] = useState<string>('100');
   const [chainFilter, setChainFilter] = useState<string>('all');
   const [verdictFilter, setVerdictFilter] = useState<VerdictFilter>('all');
   const [quoteFilter, setQuoteFilter] = useState<QuoteFilter>('all');
@@ -321,6 +321,7 @@ export const ArbitrageMatrix: React.FC<Props> = ({
 
   return (
     <div className="space-y-3.5">
+      <p className="text-xs text-amber-300">系统会自动发现候选并验证完整路线。<a href="/lab.html" className="underline ml-1">查看自动监控进度</a>；展示价差与模型净利不等于实际收益。</p>
       {/* 顶部控制与量化筛选栏 */}
       <div className="terminal-panel p-3.5 rounded-lg space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">

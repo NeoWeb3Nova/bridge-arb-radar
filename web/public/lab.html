@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自动机会监控 · Bridge Arb Radar</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5c042' stroke-width='2'><path d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700&family=Alumni+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/lab-evidence.css">
+</head>
+<body class="kinpaku-chrome">
+  <!-- Impeccable Top Navigation Bar -->
+  <header class="lab-header">
+    <div class="lab-header-inner">
+      <div class="lab-brand">
+        <div class="lab-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M5 2.5 L13.5 2.5 L5.5 21.5 L5 21.5 Q2.5 21.5 2.5 19 L2.5 5 Q2.5 2.5 5 2.5 Z" />
+            <path d="M16.5 2.5 L19 2.5 Q21.5 2.5 21.5 5 L21.5 19 Q21.5 21.5 19 21.5 L8.5 21.5 Z" />
+          </svg>
+        </div>
+        <div>
+          <div class="lab-brand-title">
+            <span class="lab-wordmark">Bridge Arb Radar</span>
+            <span class="lab-badge-impeccable">PAPER LAB</span>
+            <span class="lab-live-badge">
+              <span class="pulse-dot"></span>
+              <span id="livePulseText">自动监控就绪</span>
+            </span>
+          </div>
+          <div class="lab-brand-sub">自动机会监控与四段闭环报价核算 · 本机研究只读模式</div>
+        </div>
+      </div>
+      <div class="lab-header-actions">
+        <a href="/" class="btn-return">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>返回雷达主控制台</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="lab-container">
+    <!-- Read-only Security & Execution Disclaimer Callout -->
+    <aside class="lab-disclaimer" aria-label="执行状态说明">
+      <div class="lab-disclaimer-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <div class="lab-disclaimer-content">
+        <div class="lab-disclaimer-heading">只读研究与四段模拟报价 · 未连接实盘交易</div>
+        <p>系统自动从代币库与新桥流水发现候选，按 <strong>$500 总预算</strong> 查询完整路线，正向信号自动复测。不需要先手动发现价差。当前执行状态：<strong>未接实盘交易</strong>；没有签名或发送订单。展示价差与净额非已实现利润。</p>
+      </div>
+    </aside>
+
+    <!-- KPI Metric Summary Grid -->
+    <section class="lab-section" aria-label="核心运行参数">
+      <div class="lab-kpi-grid">
+        <div class="lab-kpi-card">
+          <span class="lab-kpi-label">预算上限</span>
+          <span class="lab-kpi-value">$500</span>
+          <span class="lab-kpi-sub">单次闭环试算上限</span>
+        </div>
+        <div class="lab-kpi-card">
+          <span class="lab-kpi-label">费用预留</span>
+          <span class="lab-kpi-value">$50</span>
+          <span class="lab-kpi-sub">Gas 与滑点缓冲储备</span>
+        </div>
+        <div class="lab-kpi-card">
+          <span class="lab-kpi-label">观察门槛</span>
+          <span class="lab-kpi-value">$2</span>
+          <span class="lab-kpi-sub">四段扣费后最低净额</span>
+        </div>
+        <div class="lab-kpi-card">
+          <span class="lab-kpi-label">留存样本</span>
+          <span id="count" class="lab-kpi-value">0</span>
+          <span class="lab-kpi-sub">已记录闭环测算报告</span>
+        </div>
+        <div class="lab-kpi-card">
+          <span class="lab-kpi-label">正向报价样本</span>
+          <span id="positive" class="lab-kpi-value num-good">0</span>
+          <span class="lab-kpi-sub">达到 $2 门槛的信号</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pipeline Funnel & Auto-Discovery -->
+    <section class="lab-section" aria-label="自动发现与验证流水线">
+      <div class="lab-section-head">
+        <h2 class="lab-section-title">自动发现与闭环流水线</h2>
+      </div>
+      <div class="lab-pipeline-grid">
+        <div class="lab-pipeline-metric">
+          <span class="k">可轮查代币</span>
+          <span id="eligible" class="v">0</span>
+        </div>
+        <div class="lab-pipeline-metric">
+          <span class="k">已轮查代币</span>
+          <span id="examined" class="v">0</span>
+        </div>
+        <div class="lab-pipeline-metric">
+          <span class="k">等待验证路线</span>
+          <span id="queued" class="v">0</span>
+        </div>
+      </div>
+      <div id="discovery" class="lab-discovery-status">读取发现状态…</div>
+      <p class="lab-pipeline-desc">自动发现每 30 秒调度，优先轮查尚未检查的代币；桥扫描发现的新信号直接进入验证队列。费用、路线或安全数据不满足条件时，记录原因，不生成交易。</p>
+    </section>
+
+    <!-- Manual Recheck & Interactive Controls -->
+    <section class="lab-section" aria-label="手动复查与交互控制">
+      <div class="lab-section-head">
+        <h2 class="lab-section-title">手动复查与交互控制</h2>
+      </div>
+      <p class="lab-section-desc">历史候选只提供合约地址。每次验证都重新询价；不使用历史展示价计算收益。单次金额为 $5–$450，默认 $100。</p>
+      
+      <div class="lab-controls-bar">
+        <select id="route" class="lab-select" aria-label="历史候选路线"></select>
+        <div class="lab-input-prefix">
+          <span>$</span>
+          <input id="amount" type="number" min="5" max="450" step="1" value="100" style="width:75px" aria-label="试算本金">
+        </div>
+        <button id="check" class="lab-btn lab-btn-primary">检查四段报价</button>
+        <button id="monitor" class="lab-btn lab-btn-toggle">开启自动观察</button>
+        <button id="export" class="lab-btn lab-btn-secondary">导出样本 JSON</button>
+      </div>
+
+      <!-- Collapsible Custom Contract Route -->
+      <details class="lab-custom-route">
+        <summary class="lab-custom-summary">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          <span>输入其他候选合约</span>
+        </summary>
+        <div class="lab-custom-inputs">
+          <label>源链 <select id="buyChain" class="lab-select" style="min-width:110px"></select></label>
+          <input id="buyAddress" placeholder="源链 0x 合约地址" aria-label="源链合约地址">
+          <label>目标链 <select id="sellChain" class="lab-select" style="min-width:110px"></select></label>
+          <input id="sellAddress" placeholder="目标链 0x 合约地址" aria-label="目标链合约地址">
+          <button id="custom" class="lab-btn lab-btn-secondary">检查该路线</button>
+        </div>
+      </details>
+
+      <div class="lab-status-wrap">
+        <div id="status" class="lab-status-pill" role="status"></div>
+      </div>
+
+      <p class="lab-section-desc" style="margin-top:14px; margin-bottom:0;">自动模式会自己寻找和验证机会。新路线先试算 $100，后续轮换 $50 / $200 / $25；正向信号在预计搬运时间之后按原金额再查一次。覆盖已入库资产与新桥流，不代表覆盖全市场。只有本机服务运行时才继续。</p>
+    </section>
+
+    <!-- Evidence Table Section -->
+    <section class="lab-section" aria-label="报价证据报告">
+      <div class="lab-section-head">
+        <h2 class="lab-section-title">报价证据</h2>
+      </div>
+      <p class="lab-section-desc">最低输出逐段传递；已包含在输出内的手续费不重复扣除。额外预留 $1 为费用假设，不代表已核实授权费或失败损失。跨链后报价可能变化；正向样本仍需要到账后重新报价、钱包校验和用户签名。</p>
+      
+      <div class="lab-table-wrap">
+        <table class="evidence-table">
+          <thead>
+            <tr>
+              <th>时间 / 路线</th>
+              <th>本金</th>
+              <th>报价进度</th>
+              <th>报价净额</th>
+              <th>结果与原因</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="lab-toast" aria-live="polite"></div>
+
+  <script src="/lab-evidence.js"></script>
+  <script>
+    let state = null;
+    const el = id => document.getElementById(id);
+    const reasonLabels = {
+      noOfficialCrossChainMapping: '缺少官方多链合约映射',
+      missingQuotes: '未取得两端行情',
+      belowThreshold: '价差、深度或身份条件未达标'
+    };
+    const stageLabels = {
+      four_leg_quotes: '准备完整报价',
+      input: '检查参数',
+      metadata: '核对资产',
+      buy: '买入报价',
+      bridge_asset: '跨链报价',
+      sell: '卖出报价',
+      return_cash: '回款报价',
+      security_check: '检查合约安全'
+    };
+
+    async function api(url, body) {
+      const r = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+      const j = await r.json();
+      if (!j.ok) throw Error(j.error || '请求失败');
+      return j;
+    }
+
+    function text(tag, value, cls) {
+      const n = document.createElement(tag);
+      n.textContent = value;
+      if (cls) n.className = cls;
+      return n;
+    }
+
+    function render(s) {
+      state = s;
+      el('eligible').textContent = s.discovery?.eligibleTokens || 0;
+      el('examined').textContent = s.discovery?.examinedTokens || 0;
+      el('queued').textContent = s.discovery?.queueLength || 0;
+
+      const last = s.discovery?.last;
+      el('discovery').textContent = last ? (
+        last.error ? '最近发现错误：' + last.error :
+        '最近一轮检查 ' + last.checked + ' 个资产，查询 ' + last.addressQueries + ' 个链上合约，得到 ' + last.returnedQuotes + ' 条行情，发现 ' + last.found + ' 条候选。未进入验证的原因：' +
+        Object.entries(last.reasons || {}).filter(([, v]) => v).map(([k, v]) => (reasonLabels[k] || k) + ' ' + v + ' 个').join('；')
+      ) : '正在准备第一轮自动发现';
+
+      el('count').textContent = s.samples;
+      el('positive').textContent = s.positiveIndications;
+
+      const selected = el('route').value;
+      el('route').replaceChildren();
+      s.candidates.forEach((c, i) => {
+        const o = text('option', c.symbol + ' · ' + c.buyChain + ' → ' + c.sellChain);
+        o.value = i;
+        el('route').append(o);
+      });
+      if (selected) el('route').value = selected;
+
+      // Monitor toggle button state
+      const monitorBtn = el('monitor');
+      if (s.enabled) {
+        monitorBtn.textContent = '停止自动观察';
+        monitorBtn.className = 'lab-btn lab-btn-toggle is-active';
+      } else {
+        monitorBtn.textContent = '开启自动观察';
+        monitorBtn.className = 'lab-btn lab-btn-toggle is-stopped';
+      }
+
+      el('check').disabled = s.busy;
+      el('custom').disabled = s.busy;
+
+      // Live pulse text in navbar
+      const pulseText = el('livePulseText');
+      if (pulseText) {
+        pulseText.textContent = s.busy ? '正在自动询价…' : s.enabled ? '自动监控运行中' : '自动监控已暂停';
+      }
+
+      // Status pill update
+      let statusText = '';
+      if (s.providerBackoffUntil) {
+        statusText = '⚠️ 报价服务限流，自动暂停至 ' + new Date(s.providerBackoffUntil).toLocaleTimeString();
+      } else if (s.busy) {
+        statusText = '⚡ 正在自动处理 ' + (s.discovery?.current?.symbol || '路线') + ' · ' + (stageLabels[s.discovery?.current?.stage] || '报价') + '…';
+      } else if (s.enabled) {
+        statusText = '✓ 自动观察已开启；下次调度：' + (s.nextRunAt ? new Date(s.nextRunAt).toLocaleTimeString() : '等待调度');
+      } else {
+        statusText = '○ 自动观察已停止';
+      }
+      el('status').textContent = statusText;
+
+      window.LabEvidence.renderReports(s.reports);
+    }
+
+    async function refresh() {
+      try {
+        render(await api('/api/lab/state'));
+      } catch (e) {
+        el('status').textContent = '⚠️ ' + e.message;
+      }
+    }
+
+    async function run(params) {
+      el('check').disabled = true;
+      el('custom').disabled = true;
+      el('status').textContent = '⚡ 正在向服务商查询四段完整报价…';
+      try {
+        await api('/api/lab/check', { ...params, amountUsd: Number(el('amount').value) });
+        window.LabEvidence?.showToast?.('询价完成，已生成四段报价报告');
+      } catch (e) {
+        el('status').textContent = '❌ ' + e.message;
+        window.LabEvidence?.showToast?.('询价失败：' + e.message);
+      } finally {
+        await refresh();
+      }
+    }
+
+    el('check').onclick = () => {
+      const c = state?.candidates[Number(el('route').value)];
+      if (c) run(c);
+      else window.LabEvidence?.showToast?.('请先选择候选路线');
+    };
+
+    el('custom').onclick = () => {
+      const buyAddress = el('buyAddress').value.trim();
+      const sellAddress = el('sellAddress').value.trim();
+      if (!buyAddress || !sellAddress) {
+        window.LabEvidence?.showToast?.('请输入完整的源链和目标链 0x 合约地址');
+        return;
+      }
+      run({
+        buyChain: el('buyChain').value,
+        sellChain: el('sellChain').value,
+        buyAddress,
+        sellAddress
+      });
+    };
+
+    el('monitor').onclick = async () => {
+      try {
+        const nextState = !state.enabled;
+        render(await api('/api/lab/config', { enabled: nextState }));
+        window.LabEvidence?.showToast?.(nextState ? '已启动自动观察调度' : '已停止自动观察调度');
+      } catch (e) {
+        el('status').textContent = '❌ ' + e.message;
+      }
+    };
+
+    el('export').onclick = () => {
+      if (!state?.reports?.length) {
+        window.LabEvidence?.showToast?.('暂无可导出的样本数据');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(state.reports, null, 2)], { type: 'application/json' }));
+      a.download = 'paper-quotes-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      window.LabEvidence?.showToast?.('已导出 ' + state.reports.length + ' 份样本记录 JSON');
+    };
+
+    for (const id of ['buyChain', 'sellChain']) {
+      for (const chain of ['base', 'arbitrum', 'optimism', 'polygon', 'bsc', 'ethereum', 'avalanche']) {
+        const o = text('option', chain.toUpperCase());
+        o.value = chain;
+        el(id).append(o);
+      }
+    }
+    el('sellChain').value = 'arbitrum';
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

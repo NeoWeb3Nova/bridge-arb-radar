@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict');
+const auto=require('../lib/auto-discovery');
+const addr=n=>'0x'+n.toString(16).padStart(40,'0');
+const tokens=Object.fromEntries(Array.from({length:24},(_,i)=>[i,{chain:'base',address:addr(i+1),symbol:'TEST'+i,starred:i<14}]));
+const first=auto.selectBatch(tokens,{}),visits=Object.fromEntries(first.map(t=>[auto.tokenKey(t),1000]));
+const second=auto.selectBatch(tokens,visits);
+assert.equal(new Set([...first,...second].map(auto.tokenKey)).size,24,'rotation must not starve unstarred tokens');
+assert.equal(auto.universe({...tokens,bad:{chain:'solana',address:'abc',symbol:'BAD'},ignored:{chain:'base',address:addr(999),symbol:'BAD',ignored:true}}).length,24);
+const entries=[{chain:'base',address:addr(1),verified:true},{chain:'arbitrum',address:addr(2),verified:true}];
+const prices={multiChainQuotes:async items=>items.map(input=>({input,quote:{chain:input.chain,priceUsd:input.chain==='base'?1:1.05,liquidityUsd:100000,quoteReserveUsd:50000,baseTokenName:'Test asset',dex:'test'}}))};
+(async()=>{
+let r=await auto.discover({a:tokens[0]}, {}, {}, {resolver:{resolveSymbol:()=>({entries})},prices,now:()=>1000});
+assert.equal(r.routes.length,1);assert.equal(r.routes[0].source,'automatic_discovery');assert.equal(r.routes[0].executable,false);
+r=await auto.discover({a:tokens[0]}, {}, {}, {resolver:{resolveSymbol:()=>({entries:entries.map(e=>({...e,verified:false}))})},prices});
+assert.equal(r.routes.length,0);assert.equal(r.reasons.noOfficialCrossChainMapping,1);
+r=await auto.discover({a:tokens[0]}, {}, {}, {resolver:{resolveSymbol:()=>({entries})},prices:{multiChainQuotes:async()=>[]}});
+assert.equal(r.routes.length,0);assert.equal(r.reasons.missingQuotes,1);
+console.log('PASS: fair rotation, new-token discovery without historical opportunities, identity gate, missing quotes');
+})().catch(e=>{console.error(e);process.exitCode=1});

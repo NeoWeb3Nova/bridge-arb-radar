@@ -397,7 +397,8 @@ export function calculateNetArb(
   const estTotalCostUsd = estGasUsd + estBridgeFeeUsd + estSlippageUsd + estDexSwapFeesUsd + estTokenTaxUsd;
   const netProfitUsd = isAnomaly ? 0 : (grossProfitUsd - estTotalCostUsd);
   const netRoiPct = (netProfitUsd / capitalUsd) * 100;
-  const isProfitable = netProfitUsd > 0 && !isTrapPool && !isAnomaly;
+  const routeUnavailable = liveQuote?.ok === false || liveQuote?.status === 'UNAVAILABLE';
+  const isProfitable = netProfitUsd > 0 && !isTrapPool && !isAnomaly && !routeUnavailable;
 
   // 计价代币与结算资产分析
   const bQuote = (buyQuoteSymbol || 'USDC').toUpperCase().trim();
@@ -440,7 +441,7 @@ export function calculateNetArb(
     extraFrictionUsd = Number((extraBuySwapCostUsd + extraSellSwapCostUsd).toFixed(2));
     netProfitUsdFullCycle = Number((netProfitUsd - extraFrictionUsd).toFixed(2));
     netRoiPctFullCycle = Number(((netProfitUsdFullCycle / capitalUsd) * 100).toFixed(2));
-    isProfitableFullCycle = netProfitUsdFullCycle > 0 && !isTrapPool && !isAnomaly;
+    isProfitableFullCycle = netProfitUsdFullCycle > 0 && !isTrapPool && !isAnomaly && !routeUnavailable;
   }
 
   // 6. Arbitrage Viability 100-point Composite Score (0~100)
@@ -511,7 +512,9 @@ export function calculateNetArb(
   const scoreGrade: 'S' | 'A' | 'B' | 'C' | 'D' = score >= 85 ? 'S' : (score >= 70 ? 'A' : (score >= 50 ? 'B' : (score >= 25 ? 'C' : 'D')));
 
   let scoreComment = '普通机会';
-  if (isAnomaly) {
+  if (routeUnavailable) {
+    scoreComment = '目标路线未验证 · 请使用闭环验证';
+  } else if (isAnomaly) {
     scoreComment = '极端价差 · 疑似假币碰撞或异常池 (已熔断)';
   } else if (security?.isHoneypot || security?.riskLevel === 'danger') {
     scoreComment = `高危 · ${security.riskReason || '智能合约貔貅 (无法卖出或恶意税率)'}`;
@@ -523,11 +526,11 @@ export function calculateNetArb(
   } else if (isNonStandardQuote && netProfitUsdFullCycle <= 0 && netProfitUsd > 0) {
     scoreComment = `非标配对 · 产出 ${settlementAsset} (USD闭环倒挂)`;
   } else if (score >= 85) {
-    scoreComment = '极佳机会 · 净利与池深兼备';
+    scoreComment = '模型估算为正 · 需闭环询价';
   } else if (score >= 70) {
-    scoreComment = '优质机会 · 深度良好';
+    scoreComment = '模型估算 · 需闭环询价';
   } else if (score >= 50) {
-    scoreComment = '可行 · 容量有限需控单';
+    scoreComment = '待验证 · 容量有限';
   } else if (security?.riskLevel === 'warning') {
     scoreComment = `警惕 · ${security.riskReason || '存在代币税/限制'}`;
   } else if (netProfitUsd <= 0) {
