@@ -477,7 +477,8 @@
         }
 
         // Detailed diagnostics text
-        this.usage.textContent = `本机 LI.FI 报价预算：近两小时已请求 ${b.used} / ${b.limit} 次；剩余 ${b.remaining} 次。一次完整验证最多需要 4 次报价。${b.remaining < 4 && b.resetAt ? ' 最早释放时间：' + new Date(b.resetAt).toLocaleString() : ''}`;
+        const tierLabel = b.limit >= 1000 ? '已启用 API Key · 100 RPM' : '公共无 Key 保护';
+        this.usage.textContent = `本机 LI.FI 报价预算（${tierLabel}）：近两小时已请求 ${b.used} / ${b.limit} 次；剩余 ${b.remaining} 次。一次完整验证最多需要 4 次报价。${b.remaining < 4 && b.resetAt ? ' 最早释放时间：' + new Date(b.resetAt).toLocaleString() : ''}`;
         this.limits.textContent = `本次服务启动以来：发出 ${n.counters.sent} 次外部请求，合并 ${n.counters.joined} 次重复请求。${cooldowns.length ? ' 限流中：' + cooldowns.join('；') : ' 当前无已知服务商限流。'}`;
 
         if (body) document.dispatchEvent(new Event('request-policy-change'));

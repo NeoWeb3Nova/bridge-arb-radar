@@ -225,6 +225,8 @@ export const ArbitrageMatrix: React.FC<Props> = ({
         } else if (verdictFilter === 'clean') {
           if (opp.verdict === 'fake' || opp.verdict === 'suspicious' || opp.suspicious) return false;
         }
+        // 交易执行矩阵只展示真实可交易的套利机会，坚决过滤假币、重名碰撞与坏账脱锚死池
+        if (opp.verdict === 'fake' || opp.isSymbolCollision || opp.collisionRisk) return false;
         return true;
       })
       .map((opp) => {

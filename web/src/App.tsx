@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { AppState, WalletItem, OpportunityItem } from './types';
 import { OpportunityCard } from './components/OpportunityCard';
 import { ArbitrageMatrix } from './components/ArbitrageMatrix';
+import { DepegRadar } from './components/DepegRadar';
 import { WalletDrawer } from './components/WalletDrawer';
 import { DecisionModal } from './components/DecisionModal';
 import { FeedTable } from './components/FeedTable';
@@ -14,7 +15,7 @@ import {
   Radar, Play, Radio, Layers, 
   TrendingUp, BookOpen, Activity, Settings, 
   Coins, WalletCards, ArrowLeftRight, Clock, ShieldCheck, CheckCircle,
-  Sun, Moon, Languages, Sparkles, X
+  Sun, Moon, Languages, Sparkles, X, ShieldAlert
 } from 'lucide-react';
 import { ago } from './utils/format';
 import { useTheme } from './context/ThemeContext';
@@ -24,7 +25,7 @@ import { playOpportunitySound, sendDesktopNotification } from './utils/notificat
 export const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { locale, toggleLocale, t: tr } = useI18n();
-  const [tab, setTab] = useState<'dash' | 'feed' | 'wallets' | 'tokens' | 'spread' | 'decisions'>('dash');
+  const [tab, setTab] = useState<'dash' | 'depeg' | 'feed' | 'wallets' | 'tokens' | 'spread' | 'decisions'>('dash');
   const [state, setState] = useState<AppState | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletItem | null>(null);
   const [selectedOpp, setSelectedOpp] = useState<OpportunityItem | null>(null);
@@ -230,6 +231,7 @@ export const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-6 text-xs font-medium border-t border-[var(--border-subtle)] overflow-x-auto">
           {[
             { id: 'dash', label: tr('tabDash'), icon: <Layers size={14} /> },
+            { id: 'depeg', label: tr('tabDepeg'), icon: <ShieldAlert size={14} /> },
             { id: 'feed', label: tr('tabFeed'), icon: <Radio size={14} /> },
             { id: 'wallets', label: tr('tabWallets'), icon: <WalletCards size={14} /> },
             { id: 'tokens', label: tr('tabTokens'), icon: <Coins size={14} /> },
@@ -370,6 +372,15 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            {/* 稳定币脱锚专项雷达 Depeg Watch (紧凑看板) */}
+            <DepegRadar
+              mode="compact"
+              enabled={state?.settings?.depeg?.enabled !== false}
+              onSelectToken={(sym) => setMatrixFilterSymbol(sym)}
+              onOpenFullView={() => setTab('depeg')}
+              onOpenSettings={() => setSettingsOpen(true)}
+            />
+
             {/* 跨链套利交易执行矩阵 DataMatrix */}
             <ArbitrageMatrix
               opportunities={state?.opportunities || []}
@@ -427,6 +438,18 @@ export const App: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {tab === 'depeg' && (
+          <DepegRadar
+            mode="full"
+            enabled={state?.settings?.depeg?.enabled !== false}
+            onSelectToken={(sym) => {
+              setMatrixFilterSymbol(sym);
+              setTab('dash');
+            }}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
         )}
 
         {tab === 'feed' && <FeedTable />}

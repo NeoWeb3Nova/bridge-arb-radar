@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { 
   X, Globe, Shield, Save, Check, Bell, Send, 
   Volume2, AlertCircle, CheckCircle2, Sliders, ExternalLink, RefreshCw, Clock,
-  Database, Trash2, AlertTriangle, Download, Loader2, Coins, Plus, CheckSquare, Square
+  Database, Trash2, AlertTriangle, Download, Loader2, Coins, Plus, CheckSquare, Square,
+  ShieldCheck
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 import { playOpportunitySound, requestNotificationPermission, sendDesktopNotification } from '../utils/notification';
@@ -177,9 +178,11 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
   const [webTestNotice, setWebTestNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // Stablecoins Whitelist
+  // Stablecoins Whitelist & Depeg
   const [selectedStables, setSelectedStables] = useState<string[]>(DEFAULT_MAJOR_STABLECOINS);
   const [customStableInput, setCustomStableInput] = useState('');
+  const [depegEnabled, setDepegEnabled] = useState(true);
+  const [depegMinSpreadPct, setDepegMinSpreadPct] = useState('0.6');
 
   const toggleStable = (sym: string) => {
     const s = sym.toUpperCase().trim();
@@ -287,6 +290,13 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
 
           if (Array.isArray(s.stablecoins) && s.stablecoins.length > 0) {
             setSelectedStables(s.stablecoins);
+          }
+
+          if (s.depeg) {
+            setDepegEnabled(s.depeg.enabled !== false);
+            if (s.depeg.minSpreadPct !== undefined) {
+              setDepegMinSpreadPct(String(s.depeg.minSpreadPct));
+            }
           }
         }
       })
@@ -472,6 +482,10 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
             minSpreadPct: !isNaN(parsedSpread) && parsedSpread >= 0 ? parsedSpread : 1.0,
           },
           stablecoins: selectedStables,
+          depeg: {
+            enabled: depegEnabled,
+            minSpreadPct: parseFloat(depegMinSpreadPct) || 0.6,
+          },
         }),
       });
       setSaved(true);
@@ -1086,6 +1100,72 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, onSaveSuccess 
 
           {activeTab === 'stablecoins' && (
             <div className="space-y-4">
+              {/* 稳定币脱锚专项监测总开关 (默认开启) */}
+              <div className="p-3.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-3 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg mt-0.5 transition ${depegEnabled ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <span>稳定币脱锚专项监控 (Depeg Watch)</span>
+                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${
+                          depegEnabled 
+                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30'
+                        }`}>
+                          {depegEnabled ? '已启用 (默认开启)' : '已停用'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[var(--text-secondary)] mt-1 leading-relaxed">
+                        全天候监控主流原生稳定币 (USDC / USDT / DAI / USDS / PYUSD / USDe) 在各链上的挂钩健康度，一旦发生脱锚或跨链利差，自动匹配 Circle CCTP 1:1、Maker PSM 等刚性套利通道。
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={depegEnabled}
+                      onChange={(e) => setDepegEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5.5 bg-[var(--bg-elevated)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                {depegEnabled && (
+                  <div className="pt-2.5 border-t border-[var(--border-subtle)]/60 flex items-center justify-between text-xs flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+                      <AlertTriangle size={13} className="text-[#f5c042]" />
+                      <span>脱锚利差预警触发阈值：</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        { label: '0.5% (极敏感)', val: '0.5' },
+                        { label: '0.6% (推荐)', val: '0.6' },
+                        { label: '1.0% (稳健)', val: '1.0' },
+                        { label: '1.5% (仅大脱锚)', val: '1.5' },
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          type="button"
+                          onClick={() => setDepegMinSpreadPct(item.val)}
+                          className={`px-2 py-0.5 text-[10px] font-mono rounded border transition cursor-pointer ${
+                            depegMinSpreadPct === item.val
+                              ? 'bg-[#f5c042]/20 text-[#f5c042] border-[#f5c042]/40 font-bold'
+                              : 'bg-[var(--bg-base)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[#f5c042]/30'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* 顶部说明与准入准则 */}
               <div className="p-3 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">

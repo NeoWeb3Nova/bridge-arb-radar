@@ -299,6 +299,10 @@ export interface AppSettings {
   endpoints?: Record<string, string>;
   notifications?: NotificationSettings;
   stablecoins?: string[];
+  depeg?: {
+    enabled?: boolean;
+    minSpreadPct?: number;
+  };
 }
 
 export interface AppState {
@@ -321,4 +325,84 @@ export interface AppState {
   opportunities: OpportunityItem[];
   topWallets: WalletItem[];
   settings?: AppSettings;
+}
+
+export type DepegSeverity = 'healthy' | 'warning' | 'depeg' | 'disabled';
+
+export interface DepegPlaybookStep {
+  step: number;
+  title: string;
+  detail: string;
+}
+
+export interface DepegPlaybook {
+  type: string;
+  name: string;
+  badge: string;
+  riskLevel: string;
+  expectedYieldPct: number;
+  profitPer10k?: number;
+  description: string;
+  steps: DepegPlaybookStep[];
+}
+
+export interface DepegAlertItem {
+  id: string;
+  symbol: string;
+  name: string;
+  severity: DepegSeverity;
+  pegTarget: number;
+  spreadPct: number;
+  discountPct: number;
+  buyChain: string;
+  buyChainName: string;
+  buyPrice: number;
+  sellChain: string;
+  sellChainName: string;
+  sellPrice: number;
+  cctpSupported?: boolean;
+  playbook: DepegPlaybook;
+  detectedAt: string;
+}
+
+export interface DepegChainQuote {
+  chain: string;
+  chainName: string;
+  address: string;
+  price: number;
+  deviationPct: number;
+  timestamp: string;
+}
+
+export interface DepegTokenSummary {
+  symbol: string;
+  name: string;
+  decimals: number;
+  cctpSupported: boolean;
+  psmSupported?: boolean;
+  oftSupported?: boolean;
+  status: DepegSeverity;
+  medianPrice: number;
+  minPrice: number;
+  minChain: string;
+  minChainName: string;
+  maxPrice: number;
+  maxChain: string;
+  maxChainName: string;
+  maxSpreadPct: number;
+  maxPegDeviationPct: number;
+  chains: DepegChainQuote[];
+}
+
+export interface DepegStatusResponse {
+  ok: boolean;
+  status: DepegSeverity;
+  checkedAt: string;
+  summary: string;
+  tokens: DepegTokenSummary[];
+  alerts: DepegAlertItem[];
+  meta?: {
+    trackedCount: number;
+    endpointsChecked: number;
+  };
 }

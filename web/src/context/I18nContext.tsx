@@ -15,6 +15,7 @@ const DICT = {
     settingsTitle: '数据源与网络代理设置',
     // Tabs
     tabDash: '概览看板',
+    tabDepeg: '脱锚雷达',
     tabFeed: '跨链桥流',
     tabWallets: '聪明钱包库',
     tabTokens: '套利代币库',
@@ -307,6 +308,7 @@ const DICT = {
     settingsTitle: 'Sources & Proxy Settings',
     // Tabs
     tabDash: 'Dashboard',
+    tabDepeg: 'Depeg Radar',
     tabFeed: 'Bridge Stream',
     tabWallets: 'Smart Wallets',
     tabTokens: 'Arb Tokens',
